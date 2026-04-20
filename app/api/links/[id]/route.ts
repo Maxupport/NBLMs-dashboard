@@ -39,3 +39,44 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    const params = await context.params;
+    const user = await getUserFromRequest(request);
+    if (!user) return NextResponse.json({ error: '未授權' }, { status: 401 });
+
+    const body = await request.json();
+    const { title, url, description } = body;
+    if (!title || !url) return NextResponse.json({ error: '標題與網址不得為空' }, { status: 400 });
+
+    const db = await getDb();
+
+    let canEdit = false;
+    if (user.role === 'admin') {
+      canEdit = true;
+    } else {
+      const res = await db.execute({
+        sql: `
+          SELECT 1 FROM notebook_links nl
+          JOIN projects p ON nl.project_id = p.id
+          WHERE nl.id = ? AND p.owner_id = ?
+        `,
+        args: [params.id, user.sub]
+      });
+      if (res.rows.length > 0) canEdit = true;
+    }
+
+    if (!canEdit) return NextResponse.json({ error: '只有專案建立者或管理員可以編輯連結' }, { status: 403 });
+
+    await db.execute({
+      sql: 'UPDATE notebook_links SET title = ?, url = ?, description = ? WHERE id = ?',
+      args: [title, url, description || '', params.id]
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 });
+  }
+}

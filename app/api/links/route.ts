@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     if (!hasAccess) return NextResponse.json({ error: '拒絕存取' }, { status: 403 });
 
     const linksRes = await db.execute({
-      sql: 'SELECT * FROM notebook_links WHERE project_id = ? ORDER BY created_at DESC',
+      sql: 'SELECT * FROM notebook_links WHERE project_id = ? ORDER BY sort_order ASC, created_at DESC',
       args: [projectId]
     });
     
