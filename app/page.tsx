@@ -11,6 +11,7 @@ function AuthContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (inviteProjectId) {
@@ -142,17 +143,24 @@ function AuthContent() {
             />
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-xs font-medium text-white/60 mb-1 ml-1">密碼 Password</label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               name="password"
               required
-              className="glass-input"
+              className="glass-input pr-10"
               placeholder={isLogin ? "輸入您的密碼" : "設定高強度密碼"}
               value={formData.password}
               onChange={handleChange}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-[34px] text-white/40 hover:text-white transition-colors"
+            >
+              {showPassword ? "👁️" : "👁️‍🗨️"}
+            </button>
           </div>
 
           {!isLogin && (

@@ -31,7 +31,7 @@ export async function GET(request: Request) {
           FROM projects p
           LEFT JOIN users u ON p.owner_id = u.id
           LEFT JOIN project_members pm ON p.id = pm.project_id
-          WHERE p.owner_id = ? OR pm.user_id = ?
+          WHERE p.owner_id = ? OR pm.user_id = ? OR p.is_global_welcome = 1
           ORDER BY p.sort_order ASC, p.created_at DESC
         `,
         args: [user.sub, user.sub]

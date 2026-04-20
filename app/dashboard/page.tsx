@@ -232,11 +232,11 @@ export default function DashboardPage() {
 
 
   const renderLinksSection = (title: string, icon: string, linkArray: any[], type: string, emptyMessage: string, bgClass = 'bg-white/5', borderClass = 'border-white/10', iconBg = 'bg-blue-500/20', iconBorder = 'border-blue-500/30', emoji = '📓') => (
-    <div>
-      <h3 className="text-lg font-medium text-white/80 mb-4 flex items-center gap-2">
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2 px-1">
         <span>{icon}</span> {title}
       </h3>
-      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${type==='internal' ? 'bg-black/20 p-4 rounded-2xl border border-white/5' : ''}`}>
+      <div className={`flex flex-row overflow-x-auto gap-4 pb-4 custom-scrollbar scroll-smooth p-1 ${type==='internal' ? 'bg-black/20 p-4 rounded-2xl border border-white/5' : ''}`}>
         {linkArray.length > 0 ? linkArray.map((link: any) => {
           const isInternal = type === 'internal';
           const match = isInternal ? link.url.match(/channel=([^&]+)/) : null;
@@ -283,7 +283,7 @@ export default function DashboardPage() {
                 }
                 fetch(`/api/projects/${selectedProjectId}/track`, { method: 'POST' }).catch(() => {});
               }}
-              className={`p-5 rounded-xl ${bgClass} border ${borderClass} hover:opacity-80 transition-all group relative overflow-hidden flex flex-col h-full min-h-[160px] cursor-pointer ${draggedLinkId === link.id ? 'opacity-50 blur-sm scale-95' : ''}`}
+              className={`p-5 rounded-xl ${bgClass} border ${borderClass} hover:opacity-80 transition-all group relative overflow-hidden flex flex-col h-full min-h-[160px] w-72 shrink-0 cursor-pointer ${draggedLinkId === link.id ? 'opacity-50 blur-sm scale-95' : ''}`}
             >
                <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex gap-1">
                  {hasWriteAccessProjects.length > 0 && (
@@ -330,7 +330,7 @@ export default function DashboardPage() {
             </a>
           );
         }) : (
-          <div className="col-span-full py-8 text-center text-white/30 text-sm italic glass-panel border-dashed border-white/5 rounded-xl">
+          <div className="w-full py-6 text-center text-white/20 text-xs italic glass-panel border-dashed border-white/5 rounded-xl shrink-0">
             {emptyMessage}
           </div>
         )}
@@ -483,8 +483,8 @@ export default function DashboardPage() {
       {loadingLinks ? (
         <div className="py-12 flex justify-center"><span className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" /></div>
       ) : (
-        <div className="space-y-8 animate-in fade-in">
-                    {/* Internal Links */}
+        <div className="space-y-4 animate-in fade-in">
+          {/* Internal Links */}
           {renderLinksSection("內部 Channel 連結", "🗂️", internalLinks, "internal", "目前尚未收錄任何內部 Channel 連結", "bg-amber-500/10", "border-amber-500/20", "bg-amber-500/20 shadow-[inset_0_2px_10px_rgba(245,158,11,0.2)]", "border-amber-500/30", "📂")}
 
           {/* NotebookLM Links */}
@@ -492,7 +492,6 @@ export default function DashboardPage() {
 
           {/* Other External Links */}
           {renderLinksSection("其他外部連結", "🔗", otherLinks, "other", "目前尚未收錄任何外部連結", "bg-white/5", "border-white/10", "bg-white/10", "border-white/20", "🌐")}
-
         </div>
       )}
 

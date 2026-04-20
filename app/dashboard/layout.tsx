@@ -239,6 +239,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Change Password state
   const [isPwdModalOpen, setIsPwdModalOpen] = useState(false);
   const [pwdForm, setPwdForm] = useState({ oldPassword: '', newPassword: '' });
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -359,13 +361,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <button onClick={() => setIsPwdModalOpen(false)} className="absolute top-4 right-4 text-white/40 hover:text-white">✕</button>
               <h3 className="text-xl font-medium mb-4">變更個人密碼</h3>
               <form onSubmit={handleChangePassword} className="space-y-4">
-                <div>
+                <div className="relative">
                   <label className="text-xs text-white/50 block mb-1">目前舊密碼</label>
-                  <input required type="password" autoFocus className="glass-input" value={pwdForm.oldPassword} onChange={e => setPwdForm({...pwdForm, oldPassword: e.target.value})} />
+                  <input required type={showOldPassword ? "text" : "password"} autoFocus className="glass-input pr-10" value={pwdForm.oldPassword} onChange={e => setPwdForm({...pwdForm, oldPassword: e.target.value})} />
+                  <button type="button" onClick={() => setShowOldPassword(!showOldPassword)} className="absolute right-3 top-[26px] text-white/40 hover:text-white transition-colors">
+                    {showOldPassword ? "👁️" : "👁️‍🗨️"}
+                  </button>
                 </div>
-                <div>
+                <div className="relative">
                   <label className="text-xs text-white/50 block mb-1">新密碼 (至少 8 碼)</label>
-                  <input required type="password" minLength={8} className="glass-input" value={pwdForm.newPassword} onChange={e => setPwdForm({...pwdForm, newPassword: e.target.value})} />
+                  <input required type={showNewPassword ? "text" : "password"} minLength={8} className="glass-input pr-10" value={pwdForm.newPassword} onChange={e => setPwdForm({...pwdForm, newPassword: e.target.value})} />
+                  <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-[26px] text-white/40 hover:text-white transition-colors">
+                    {showNewPassword ? "👁️" : "👁️‍🗨️"}
+                  </button>
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <button type="submit" className="px-4 py-2 rounded-lg text-sm bg-primary text-white hover:bg-primary/90 transition-colors w-full">儲存並重新登入</button>
