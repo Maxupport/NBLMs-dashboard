@@ -21,7 +21,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: '無效的狀態' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = await getDb();
     await db.execute({
       sql: 'UPDATE users SET status = ? WHERE id = ? AND role != \'admin\'',
       args: [status, params.id]

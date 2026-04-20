@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     }
     const { oldPassword, newPassword } = parsed.data;
 
-    const db = getDb();
+    const db = await getDb();
     
     // Check old password
     const res = await db.execute({

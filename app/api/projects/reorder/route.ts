@@ -20,7 +20,7 @@ export async function PATCH(request: Request) {
     }
 
     const { orderedIds } = parsed.data;
-    const db = getDb();
+    const db = await getDb();
 
     // Perform batch updates
     // For simplicity with libSQL, we'll run multiple queries in a transaction if possible, 

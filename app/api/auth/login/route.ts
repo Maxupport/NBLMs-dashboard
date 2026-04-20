@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
     const { username, password } = parsed.data;
 
-    const db = getDb();
+    const db = await getDb();
     const res = await db.execute({
       sql: 'SELECT id, username, password_hash, role, status FROM users WHERE username = ?',
       args: [username]

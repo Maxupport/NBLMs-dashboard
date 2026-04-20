@@ -10,7 +10,7 @@ async function checkAdmin(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const db = getDb();
+    const db = await getDb();
     const res = await db.execute("SELECT key, value FROM system_settings");
     const settings = res.rows.reduce((acc: any, row: any) => {
       acc[row.key] = row.value;
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const { key, value } = await request.json();
     if (!key || value === undefined) return NextResponse.json({ error: '參數不齊全' }, { status: 400 });
 
-    const db = getDb();
+    const db = await getDb();
     await db.execute({
       sql: 'INSERT INTO system_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?',
       args: [key, value.toString(), value.toString()]

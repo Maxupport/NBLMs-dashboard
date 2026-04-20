@@ -1,21 +1,25 @@
 import { createClient, Client } from '@libsql/client';
 
 let _db: Client | null = null;
+let _initPromise: Promise<void> | null = null;
 
-export function getDb(): Client {
-  if (_db) return _db;
-  
-  // 建立連線：優先使用環境變數設定的 Turso URL。
-  // 若未設定，則使用本機檔案庫便於開發階段測試。
-  const url = process.env.TURSO_DATABASE_URL || 'file:local.db';
-  const authToken = process.env.TURSO_AUTH_TOKEN || undefined;
+export async function getDb(): Promise<Client> {
+  if (!_db) {
+    // 建立連線：優先使用環境變數設定的 Turso URL。
+    // 若未設定，則使用本機檔案庫便於開發階段測試。
+    const url = process.env.TURSO_DATABASE_URL || 'file:local.db';
+    const authToken = process.env.TURSO_AUTH_TOKEN || undefined;
 
-  _db = createClient({
-    url,
-    authToken,
-  });
+    _db = createClient({
+      url,
+      authToken,
+    });
 
-  initSchema(_db);
+    _initPromise = initSchema(_db);
+  }
+
+  // 確保 schema 初始化完成後才回傳（避免 Vercel Serverless cold-start race condition）
+  await _initPromise;
   return _db;
 }
 

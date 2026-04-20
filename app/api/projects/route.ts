@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     const user = await getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: '未授權' }, { status: 401 });
 
-    const db = getDb();
+    const db = await getDb();
     let projects;
 
     if (user.role === 'admin') {
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
 
     const { name, description, icon, color } = parsed.data;
 
-    const db = getDb();
+    const db = await getDb();
     
     // Check channel limit for members
     if (user.role !== 'admin') {

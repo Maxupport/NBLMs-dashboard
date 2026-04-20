@@ -21,7 +21,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: '無效的狀態' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = await getDb();
     
     // Prevent disabling admin's projects through this endpoint
     const pRes = await db.execute({

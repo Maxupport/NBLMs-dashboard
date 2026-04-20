@@ -9,7 +9,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     if (!user) return NextResponse.json({ error: '未授權' }, { status: 401 });
 
     // 檢查目標頻道是否存在
-    const db = getDb();
+    const db = await getDb();
     const res = await db.execute({
       sql: 'SELECT id FROM projects WHERE id = ?',
       args: [params.id]

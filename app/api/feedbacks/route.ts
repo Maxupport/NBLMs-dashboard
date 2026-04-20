@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const user = await getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: '拒絕存取' }, { status: 401 });
 
-    const db = getDb();
+    const db = await getDb();
     const res = await db.execute(`
       SELECT f.id, f.content, f.created_at, u.username, u.role, f.user_id 
       FROM feedbacks f
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     const user = await getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: '請先登入' }, { status: 401 });
 
-    const db = getDb();
+    const db = await getDb();
     // 檢查留言板是否開啟
     const stRes = await db.execute("SELECT value FROM system_settings WHERE key = 'feedback_board_open'");
     if (stRes.rows[0]?.value !== 'true') {

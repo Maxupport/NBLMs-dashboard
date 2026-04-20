@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 
     const { username, password, email, note, inviteProjectId } = parsed.data;
 
-    const db = getDb();
+    const db = await getDb();
     
     // 檢查是否已有相同帳號的正式 user 或審核中的表單
     const existingUser = await db.execute({

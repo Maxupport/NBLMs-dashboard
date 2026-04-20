@@ -5,7 +5,7 @@ import { getUserFromRequest } from '@/lib/auth';
 // Helper: check if user is owner or admin of the project
 async function isOwnerOrAdmin(userId: string, role: string, projectId: string): Promise<boolean> {
   if (role === 'admin') return true;
-  const db = getDb();
+  const db = await getDb();
   const res = await db.execute({
     sql: 'SELECT owner_id FROM projects WHERE id = ?',
     args: [projectId]
@@ -23,7 +23,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const allowed = await isOwnerOrAdmin(user.sub, user.role, params.id);
     if (!allowed) return NextResponse.json({ error: '拒絕存取' }, { status: 403 });
 
-    const db = getDb();
+    const db = await getDb();
     const res = await db.execute({
       sql: `
         SELECT u.id, u.username, u.role,
@@ -55,7 +55,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const { memberIds } = await request.json(); // Array of user IDs
 
     // 安全防護：過濾掉任何 admin 帳號，確保管理員永遠不會被寫入 project_members
-    const db = getDb();
+    const db = await getDb();
     const adminCheck = await db.execute(`SELECT id FROM users WHERE role = 'admin'`);
     const adminIds = new Set(adminCheck.rows.map((r: any) => r.id?.toString()));
     const safeMemberIds = (memberIds as string[]).filter(id => !adminIds.has(id.toString()));

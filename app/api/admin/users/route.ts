@@ -15,7 +15,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: '拒絕存取' }, { status: 403 });
     }
 
-    const db = getDb();
+    const db = await getDb();
     const res = await db.execute(`
       SELECT u.id, u.username, u.role, u.created_at, u.status, u.last_login_at,
              (SELECT COUNT(*) FROM projects WHERE owner_id = u.id) as channel_count
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
     const { username, role } = parsed.data;
 
-    const db = getDb();
+    const db = await getDb();
     const existingUser = await db.execute({
       sql: 'SELECT id FROM users WHERE username = ?',
       args: [username]

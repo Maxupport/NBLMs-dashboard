@@ -5,7 +5,7 @@ import { getUserFromRequest } from '@/lib/auth';
 // Helper: check if user is owner or admin
 async function isOwnerOrAdmin(userId: string, role: string, projectId: string): Promise<boolean> {
   if (role === 'admin') return true;
-  const db = getDb();
+  const db = await getDb();
   const res = await db.execute({
     sql: 'SELECT owner_id FROM projects WHERE id = ?',
     args: [projectId]
@@ -23,7 +23,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     const allowed = await isOwnerOrAdmin(user.sub, user.role, params.id);
     if (!allowed) return NextResponse.json({ error: '拒絕存取：只有專案建立者或管理員可刪除' }, { status: 403 });
 
-    const db = getDb();
+    const db = await getDb();
     await db.execute({
       sql: 'DELETE FROM projects WHERE id = ?',
       args: [params.id]
@@ -52,7 +52,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       return NextResponse.json({ error: '專案名稱不得為空' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = await getDb();
     await db.execute({
       sql: 'UPDATE projects SET name = ?, description = ? WHERE id = ?',
       args: [name.trim(), description || '', params.id]

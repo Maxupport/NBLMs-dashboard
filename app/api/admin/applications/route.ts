@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: '拒絕存取' }, { status: 403 });
     }
 
-    const db = getDb();
+    const db = await getDb();
     const res = await db.execute('SELECT * FROM registration_applications ORDER BY created_at DESC');
     
     return NextResponse.json({ applications: res.rows });
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '無效的請求' }, { status: 400 });
     }
 
-    const db = getDb();
+    const db = await getDb();
     const res = await db.execute({
       sql: 'SELECT * FROM registration_applications WHERE id = ?',
       args: [id]

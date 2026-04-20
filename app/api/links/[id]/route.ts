@@ -8,7 +8,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     const user = await getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: '未授權' }, { status: 401 });
 
-    const db = getDb();
+    const db = await getDb();
 
     // Admin 可直接刪除；否則須驗證此連結所屬專案的 owner_id 是否為當前使用者
     let canDelete = false;

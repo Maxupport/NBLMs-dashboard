@@ -8,7 +8,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     const user = await getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: '拒絕存取' }, { status: 401 });
 
-    const db = getDb();
+    const db = await getDb();
     
     // 檢查權限：只有 admin 或「該留言的發表者」可以刪除
     const fbRes = await db.execute({

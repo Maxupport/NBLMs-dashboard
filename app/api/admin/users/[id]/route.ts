@@ -16,7 +16,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     }
 
     const { id } = params;
-    const db = getDb();
+    const db = await getDb();
     
     // 檢查是否為管理員，防止刪除管理員自身（安全保護）
     const targetUser = await db.execute({

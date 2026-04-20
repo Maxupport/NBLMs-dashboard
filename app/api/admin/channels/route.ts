@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: '拒絕存取' }, { status: 403 });
     }
 
-    const db = getDb();
+    const db = await getDb();
     const res = await db.execute(`
       SELECT p.*,
              u.username as owner_username,

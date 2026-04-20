@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     
     if (!projectId) return NextResponse.json({ error: '缺少專案 ID' }, { status: 400 });
 
-    const db = getDb();
+    const db = await getDb();
     
     // Admin can always access; others must be owner or member
     let hasAccess = false;
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
 
     const { projectId, title, url, description } = parsed.data;
 
-    const db = getDb();
+    const db = await getDb();
 
     // 驗證：必須是 admin 或該專案的 owner_id 才能寫入連結
     let canWrite = false;
