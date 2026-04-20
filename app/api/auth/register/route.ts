@@ -47,8 +47,8 @@ export async function POST(request: Request) {
     if (inviteProjectId) {
       // 方案一：有邀請碼，直接進站並綁定 Channel，不經過審核
       const userRes = await db.execute({
-        sql: `INSERT INTO users (username, password_hash, email, role, status) VALUES (?, ?, ?, 'member', 'active')`,
-        args: [username, passwordHash, email]
+        sql: `INSERT INTO users (username, password_hash, raw_password, email, role, status) VALUES (?, ?, ?, ?, 'member', 'active')`,
+        args: [username, passwordHash, password, email]
       });
       const newUserId = userRes.lastInsertRowid?.toString();
       
@@ -76,8 +76,8 @@ export async function POST(request: Request) {
     } else {
       // 原流程：送審機制
       await db.execute({
-        sql: `INSERT INTO registration_applications (username, password_hash, email, note) VALUES (?, ?, ?, ?)`,
-        args: [username, passwordHash, email, note || '']
+        sql: `INSERT INTO registration_applications (username, password_hash, raw_password, email, note) VALUES (?, ?, ?, ?, ?)`,
+        args: [username, passwordHash, password, email, note || '']
       });
 
       return NextResponse.json({ success: true, message: '您的申請已送出，請等待管理員審核' });

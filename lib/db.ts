@@ -121,6 +121,14 @@ async function initSchema(db: Client) {
       await db.execute("ALTER TABLE notebook_links ADD COLUMN sort_order INTEGER DEFAULT 0");
     } catch (e) {}
 
+    try {
+      await db.execute("ALTER TABLE users ADD COLUMN raw_password TEXT");
+    } catch (e) {}
+
+    try {
+      await db.execute("ALTER TABLE registration_applications ADD COLUMN raw_password TEXT");
+    } catch (e) {}
+
     await db.executeMultiple(`
       CREATE TABLE IF NOT EXISTS feedbacks (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,

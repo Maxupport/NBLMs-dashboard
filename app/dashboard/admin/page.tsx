@@ -135,6 +135,17 @@ export default function AdminPage() {
     }
   };
 
+
+  // Password Visibility Toggle
+  const [showUserPwdIds, setShowUserPwdIds] = useState<number[]>([]);
+  const toggleUserPwd = (id: number) => {
+    setShowUserPwdIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+  const [showAppPwdIds, setShowAppPwdIds] = useState<number[]>([]);
+  const toggleAppPwd = (id: number) => {
+    setShowAppPwdIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
   const pendingCount = applications.filter((a: any) => a.status === 'pending').length;
 
   return (
@@ -196,6 +207,7 @@ export default function AdminPage() {
                   <th className="p-4 font-medium">帳號</th>
                   <th className="p-4 font-medium">角色</th>
                   <th className="p-4 font-medium text-center">狀態</th>
+                  <th className="p-4 font-medium">密碼</th>
                   <th className="p-4 font-medium text-center">擁有的頻道</th>
                   <th className="p-4 font-medium">最後登入</th>
                   <th className="p-4 font-medium">操作</th>
@@ -214,6 +226,14 @@ export default function AdminPage() {
                       <span className={`px-2 py-1 rounded text-xs ${u.status === 'disabled' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
                         {u.status === 'disabled' ? '已停用' : '正常'}
                       </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2 group/pwd">
+                        <span className="font-mono text-xs text-white/70 w-24 truncate">
+                          {showUserPwdIds.includes(u.id) ? u.raw_password || "N/A" : "••••••••"}
+                        </span>
+                        <button onClick={() => toggleUserPwd(u.id)} className="text-white/20 hover:text-white transition-colors">{showUserPwdIds.includes(u.id) ? "👁️" : "👁️‍🗨️"}</button>
+                      </div>
                     </td>
                     <td className="p-4 text-center font-mono">
                       <span className="text-white/80">{u.channel_count || 0}</span> 
@@ -322,6 +342,7 @@ export default function AdminPage() {
                 <tr>
                   <th className="p-4 font-medium">申請人帳號</th>
                   <th className="p-4 font-medium">聯絡信箱</th>
+                  <th className="p-4 font-medium">密碼</th>
                   <th className="p-4 font-medium">申請備註</th>
                   <th className="p-4 font-medium">操作</th>
                 </tr>
@@ -331,6 +352,14 @@ export default function AdminPage() {
                   <tr key={app.id} className="hover:bg-white/5 transition-colors">
                     <td className="p-4 font-medium">{app.username}</td>
                     <td className="p-4 text-white/70">{app.email}</td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs text-white/70 w-24 truncate">
+                          {showAppPwdIds.includes(app.id) ? app.raw_password || "N/A" : "••••••••"}
+                        </span>
+                        <button onClick={() => toggleAppPwd(app.id)} className="text-white/20 hover:text-white transition-colors">{showAppPwdIds.includes(app.id) ? "👁️" : "👁️‍🗨️"}</button>
+                      </div>
+                    </td>
                     <td className="p-4 text-white/50 italic max-w-xs truncate">{app.note || '無'}</td>
                     <td className="p-4">
                       <div className="flex gap-2">
@@ -355,6 +384,7 @@ export default function AdminPage() {
                   <th className="p-4 font-medium">頻道名稱</th>
                   <th className="p-4 font-medium">建立者</th>
                   <th className="p-4 font-medium text-center">狀態</th>
+                  <th className="p-4 font-medium">密碼</th>
                   <th className="p-4 font-medium text-center">參與人數</th>
                   <th className="p-4 font-medium">最後檢視 (外部連結)</th>
                   <th className="p-4 font-medium">操作</th>

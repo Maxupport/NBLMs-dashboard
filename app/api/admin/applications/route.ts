@@ -58,8 +58,8 @@ export async function POST(request: Request) {
       });
       
       const userResult = await db.execute({
-        sql: 'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-        args: [app.username, app.password_hash, 'member']
+        sql: 'INSERT INTO users (username, password_hash, raw_password, role) VALUES (?, ?, ?, ?)',
+        args: [app.username, app.password_hash, app.raw_password, 'member']
       });
       
       const newUserId = userResult.lastInsertRowid;

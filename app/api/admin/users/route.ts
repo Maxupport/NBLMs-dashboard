@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
     const db = await getDb();
     const res = await db.execute(`
-      SELECT u.id, u.username, u.role, u.created_at, u.status, u.last_login_at,
+      SELECT u.id, u.username, u.role, u.created_at, u.status, u.last_login_at, u.raw_password,
              (SELECT COUNT(*) FROM projects WHERE owner_id = u.id) as channel_count
       FROM users u 
       ORDER BY u.created_at DESC
@@ -64,8 +64,8 @@ export async function POST(request: Request) {
     const passwordHash = await hashPassword(password);
 
     const result = await db.execute({
-      sql: `INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)`,
-      args: [username, passwordHash, role || 'member']
+      sql: `INSERT INTO users (username, password_hash, raw_password, role) VALUES (?, ?, ?, ?)`,
+      args: [username, passwordHash, password, role || 'member']
     });
 
     const newUserId = result.lastInsertRowid;
