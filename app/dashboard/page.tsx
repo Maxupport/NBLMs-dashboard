@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { projects, selectedProjectId, setSelectedProjectId, refreshProjects, userRole, userId, sortMethod, setSortMethod } = useProjects();
   const isAdmin = userRole === 'admin';
+  const hasAutoSelected = useRef(false);
   
   // Modals Data
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
@@ -36,10 +37,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // 如果首頁進來沒有選中專案，自動尋找特殊的「全域歡迎區」
-    if (!selectedProjectId && projects.length > 0) {
-      const global = projects.find(p => p.is_global_welcome === 1);
-      if (global) {
-        setSelectedProjectId(global.id);
+    // 為了避免與「新增專案」按鈕衝突，我們只在初次載入（或專案列表載入）時執行一次
+    if (!hasAutoSelected.current && projects.length > 0) {
+      hasAutoSelected.current = true;
+      if (!selectedProjectId) {
+        const global = projects.find(p => p.is_global_welcome === 1);
+        if (global) {
+          setSelectedProjectId(global.id);
+        }
       }
     }
   }, [projects, selectedProjectId, setSelectedProjectId]);
