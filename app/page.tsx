@@ -231,7 +231,7 @@ function AuthContent() {
         </form>
 
         <footer className="mt-12 text-center">
-           <p className="text-[10px] text-white/20 uppercase tracking-[0.2em]">Powered by Maxupport Knowledge Hub</p>
+           <p className="text-[10px] text-white/20 uppercase tracking-[0.2em]">Powered by Nathan & Maxupport</p>
         </footer>
       </article>
     </main>
