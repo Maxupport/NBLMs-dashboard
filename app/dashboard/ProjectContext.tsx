@@ -14,6 +14,7 @@ type Project = {
   sort_order: number;
   created_at: string;
   owner_username?: string;
+  status?: string;
 };
 
 type ProjectContextType = {

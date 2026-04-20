@@ -73,6 +73,7 @@ async function initSchema(db: Client) {
     `);
 
     // 檢查是否有管理員
+    const res = await db.execute("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
     if (res.rows.length === 0) {
       const bcrypt = require('bcryptjs');
       const hash = await bcrypt.hash('maxupport1238', 12);
