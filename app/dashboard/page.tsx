@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -31,8 +31,18 @@ export default function DashboardPage() {
   const [draggedLinkId, setDraggedLinkId] = useState<number | null>(null);
   const [draggedLinkType, setDraggedLinkType] = useState<string | null>(null);
 
+  // Search Filter
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Copy Link Modal
+  useEffect(() => {
+    // 如果首頁進來沒有選中專案，自動尋找特殊的「全域歡迎區」
+    if (!selectedProjectId && projects.length > 0) {
+      const global = projects.find(p => p.is_global_welcome === 1);
+      if (global) {
+        setSelectedProjectId(global.id);
+      }
+    }
+  }, [projects, selectedProjectId, setSelectedProjectId]);
   const [copyLinkModalState, setCopyLinkModalState] = useState<{ isOpen: boolean; link: any | null }>({ isOpen: false, link: null });
   const [copyTargetProjectId, setCopyTargetProjectId] = useState<number | ''>('');
 
@@ -40,9 +50,6 @@ export default function DashboardPage() {
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [projectMembers, setProjectMembers] = useState<number[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
-
-  // Search Filter
-  const [searchQuery, setSearchQuery] = useState('');
 
   const activeProject = projects.find(p => p.id === selectedProjectId);
   const isOwnerOrAdmin = isAdmin || (activeProject && (activeProject as any).owner_id?.toString() === userId);
@@ -236,7 +243,7 @@ export default function DashboardPage() {
       <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2 px-1">
         <span>{icon}</span> {title}
       </h3>
-      <div className={`flex flex-row overflow-x-auto gap-4 pb-4 custom-scrollbar scroll-smooth p-1 ${type==='internal' ? 'bg-black/20 p-4 rounded-2xl border border-white/5' : ''}`}>
+      <div className={`flex flex-row overflow-x-auto gap-4 pb-4 custom-scrollbar scroll-smooth p-4 rounded-2xl bg-black/20 border border-white/5 ${type==='internal' ? 'shadow-[inset_0_2px_10px_rgba(245,158,11,0.05)]' : ''}`}>
         {linkArray.length > 0 ? linkArray.map((link: any) => {
           const isInternal = type === 'internal';
           const match = isInternal ? link.url.match(/channel=([^&]+)/) : null;

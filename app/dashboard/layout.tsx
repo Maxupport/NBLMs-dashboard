@@ -34,7 +34,7 @@ function Sidebar() {
     ? (showAllAdmin ? projects : projects.filter(p => !hiddenProjects.has(p.id)))
     : projects;
 
-  const specialProject = visibleProjects.find(p => p.name === '全域歡迎區' || p.name === '使用說明＆關於我' || p.name === '使用者說明＆關於我');
+  const specialProject = visibleProjects.find(p => p.is_global_welcome === 1);
   const normalProjects = visibleProjects.filter(p => p.id !== specialProject?.id);
 
   const hiddenCount = hiddenProjects.size;

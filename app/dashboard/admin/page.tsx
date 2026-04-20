@@ -205,12 +205,12 @@ export default function AdminPage() {
               <thead className="bg-black/20 text-white/50">
                 <tr>
                   <th className="p-4 font-medium">帳號</th>
-                  <th className="p-4 font-medium">角色</th>
+                  <th className="p-4 font-medium">權限</th>
                   <th className="p-4 font-medium text-center">狀態</th>
                   <th className="p-4 font-medium">密碼</th>
-                  <th className="p-4 font-medium text-center">擁有的頻道</th>
-                  <th className="p-4 font-medium">最後登入</th>
-                  <th className="p-4 font-medium">操作</th>
+                  <th className="p-4 font-medium text-center">頻道</th>
+                  <th className="p-4 font-medium">登入</th>
+                  <th className="p-4 font-medium">管理</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-sm">
@@ -228,11 +228,16 @@ export default function AdminPage() {
                       </span>
                     </td>
                     <td className="p-4">
-                      <div className="flex items-center gap-2 group/pwd">
+                      <div className="flex items-center gap-2">
                         <span className="font-mono text-xs text-white/70 w-24 truncate">
-                          {showUserPwdIds.includes(u.id) ? u.raw_password || "N/A" : "••••••••"}
+                          {showUserPwdIds.includes(u.id) ? (u.raw_password || "已加密") : "••••••••"}
                         </span>
-                        <button onClick={() => toggleUserPwd(u.id)} className="text-white/20 hover:text-white transition-colors">{showUserPwdIds.includes(u.id) ? "👁️" : "👁️‍🗨️"}</button>
+                        <button 
+                          onClick={() => toggleUserPwd(u.id)} 
+                          className={`text-xs px-1.5 py-0.5 rounded border transition-all ${showUserPwdIds.includes(u.id) ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
+                        >
+                          {showUserPwdIds.includes(u.id) ? "隱藏" : "查看"}
+                        </button>
                       </div>
                     </td>
                     <td className="p-4 text-center font-mono">
@@ -340,24 +345,28 @@ export default function AdminPage() {
           <table className="w-full text-left text-sm">
               <thead className="bg-black/20 text-white/50">
                 <tr>
-                  <th className="p-4 font-medium">申請人帳號</th>
-                  <th className="p-4 font-medium">聯絡信箱</th>
+                  <th className="p-4 font-medium">帳號</th>
+                  <th className="p-4 font-medium">信箱</th>
                   <th className="p-4 font-medium">密碼</th>
-                  <th className="p-4 font-medium">申請備註</th>
-                  <th className="p-4 font-medium">操作</th>
+                  <th className="p-4 font-medium">備註</th>
+                  <th className="p-4 font-medium">審核</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {applications.filter((a: any) => a.status === 'pending').map((app: any) => (
                   <tr key={app.id} className="hover:bg-white/5 transition-colors">
                     <td className="p-4 font-medium">{app.username}</td>
-                    <td className="p-4 text-white/70">{app.email}</td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs text-white/70 w-24 truncate">
-                          {showAppPwdIds.includes(app.id) ? app.raw_password || "N/A" : "••••••••"}
+                          {showAppPwdIds.includes(app.id) ? (app.raw_password || "無紀錄") : "••••••••"}
                         </span>
-                        <button onClick={() => toggleAppPwd(app.id)} className="text-white/20 hover:text-white transition-colors">{showAppPwdIds.includes(app.id) ? "👁️" : "👁️‍🗨️"}</button>
+                        <button 
+                          onClick={() => toggleAppPwd(app.id)} 
+                          className={`text-xs px-1.5 py-0.5 rounded border transition-all ${showAppPwdIds.includes(app.id) ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
+                        >
+                          {showAppPwdIds.includes(app.id) ? "隱藏" : "查看"}
+                        </button>
                       </div>
                     </td>
                     <td className="p-4 text-white/50 italic max-w-xs truncate">{app.note || '無'}</td>

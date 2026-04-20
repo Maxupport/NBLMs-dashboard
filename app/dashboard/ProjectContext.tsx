@@ -15,6 +15,7 @@ type Project = {
   created_at: string;
   owner_username?: string;
   status?: string;
+  is_global_welcome?: number;
 };
 
 type ProjectContextType = {
