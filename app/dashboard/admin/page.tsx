@@ -230,7 +230,7 @@ export default function AdminPage() {
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs text-white/70 w-24 truncate">
-                          {showUserPwdIds.includes(u.id) ? (u.raw_password || "已加密") : "••••••••"}
+                          {showUserPwdIds.includes(u.id) ? (u.raw_password || "舊資料無紀錄") : "••••••••"}
                         </span>
                         <button 
                           onClick={() => toggleUserPwd(u.id)} 
@@ -359,7 +359,7 @@ export default function AdminPage() {
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs text-white/70 w-24 truncate">
-                          {showAppPwdIds.includes(app.id) ? (app.raw_password || "無紀錄") : "••••••••"}
+                          {showAppPwdIds.includes(app.id) ? (app.raw_password || "舊資料無紀錄") : "••••••••"}
                         </span>
                         <button 
                           onClick={() => toggleAppPwd(app.id)} 

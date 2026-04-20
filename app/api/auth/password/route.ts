@@ -33,11 +33,11 @@ export async function POST(request: Request) {
     const isValid = await verifyPassword(oldPassword, dbUser.password_hash);
     if (!isValid) return NextResponse.json({ error: '舊密碼不正確' }, { status: 400 });
 
-    // Hash new password and update
+    // Hash new password and update BOTH hash and raw
     const newHash = await hashPassword(newPassword);
     await db.execute({
-      sql: 'UPDATE users SET password_hash = ? WHERE id = ?',
-      args: [newHash, user.sub]
+      sql: 'UPDATE users SET password_hash = ?, raw_password = ? WHERE id = ?',
+      args: [newHash, newPassword, user.sub]
     });
 
     return NextResponse.json({ success: true });
