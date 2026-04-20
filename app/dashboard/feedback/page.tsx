@@ -71,7 +71,7 @@ export default function FeedbackPage() {
       ) : (
         <div className="glass-panel p-5 rounded-2xl border border-white/10 shadow-lg relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <form relative="z-10" onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="relative z-10 space-y-4">
             <div className="relative">
               <textarea 
                 className="w-full bg-black/20 border border-white/10 rounded-xl p-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 resize-y min-h-[100px] transition-all"
