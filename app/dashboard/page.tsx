@@ -290,13 +290,13 @@ export default function DashboardPage() {
                 }
                 fetch(`/api/projects/${selectedProjectId}/track`, { method: 'POST' }).catch(() => {});
               }}
-              className={`p-4 rounded-xl ${bgClass} border ${borderClass} hover:opacity-80 transition-all group relative overflow-hidden flex flex-col h-full min-h-[130px] w-64 shrink-0 cursor-pointer ${draggedLinkId === link.id ? 'opacity-50 blur-sm scale-95' : ''}`}
+              className={`p-4 rounded-xl ${bgClass} border ${borderClass} hover:opacity-80 transition-all group relative overflow-hidden flex flex-col h-full min-h-[130px] w-64 shrink-0 cursor-pointer interactive-card ${draggedLinkId === link.id ? 'opacity-50 blur-sm scale-95' : ''}`}
             >
                <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex gap-1">
                  {hasWriteAccessProjects.length > 0 && (
                    <button 
                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCopyLinkModalState({ isOpen: true, link }); }}
-                     className="text-white/40 hover:text-white transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md"
+                     className="text-white/40 hover:text-white transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md interactive-card"
                      title="收錄至其他 Channel"
                    >
                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
@@ -306,14 +306,14 @@ export default function DashboardPage() {
                    <>
                      <button
                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditLinkData({ id: link.id, title: link.title, url: link.url, description: link.description || '' }); setIsEditLinkModalOpen(true); }}
-                       className="text-white/40 hover:text-white transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md"
-                       title="編輯"
+                       className="text-white/40 hover:text-white transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md interactive-card"
+                       title="編輯系統"
                      >
-                       ✎
+                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                      </button>
                      <button 
                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteLink(link.id); }}
-                       className="text-white/40 hover:text-red-400 transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md"
+                       className="text-white/40 hover:text-red-400 transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md interactive-card"
                        title="刪除"
                      >
                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>

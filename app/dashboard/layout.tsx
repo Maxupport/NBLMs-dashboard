@@ -114,7 +114,7 @@ function Sidebar() {
              setSelectedProjectId(null);
              router.push('/dashboard');
           }}
-          className={`w-full text-left px-4 py-2.5 rounded-xl transition-all flex items-center gap-3 mb-2 border ${
+          className={`w-full text-left px-4 py-2.5 rounded-xl transition-all flex items-center gap-3 mb-2 border interactive-card ${
             selectedProjectId === null && !pathname?.includes('/feedback') 
               ? 'bg-primary/10 text-primary-foreground border-primary/30 shadow-[0_0_15px_rgba(255,255,255,0.05)] font-semibold' 
               : 'border-white/5 bg-white/[0.02] text-white/70 hover:bg-white/10 hover:border-white/10 hover:text-white font-medium'
@@ -148,7 +148,7 @@ function Sidebar() {
                 }
               }}
               disabled={p.status === 'disabled'}
-              className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm flex items-center gap-2 pr-8 relative ${
+              className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm flex items-center gap-2 pr-8 relative interactive-card ${
                 p.status === 'disabled' ? 'opacity-60 cursor-not-allowed bg-red-900/10 text-white/40 border border-red-500/10' :
                 selectedProjectId === p.id ? 'bg-white/10 text-white border border-white/20 shadow-lg' : 'text-white/50 hover:bg-white/5 hover:text-white'
               }`}
@@ -204,7 +204,7 @@ function Sidebar() {
               }
             }}
             disabled={specialProject.status === 'disabled'}
-            className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${
+            className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 interactive-card ${
               selectedProjectId === specialProject.id ? 'bg-white/10 text-white border border-white/20 shadow-lg' : 'text-white/60 hover:bg-white/5 hover:text-white'
             }`}
           >
@@ -220,7 +220,7 @@ function Sidebar() {
           onClick={() => {
              router.push('/dashboard/feedback');
           }}
-          className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 ${
+          className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 interactive-card ${
             pathname?.includes('/feedback') ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-lg shadow-indigo-500/10' : 'text-white/60 hover:bg-white/5 hover:text-white'
           }`}
         >
@@ -320,7 +320,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {user.role === 'admin' && (
                   <button 
                     onClick={() => router.push('/dashboard/admin')}
-                    className="p-2 hover:bg-amber-500/20 hover:text-amber-300 rounded-lg transition-colors text-white/50"
+                    className="p-2 hover:bg-amber-500/20 hover:text-amber-300 rounded-lg transition-colors text-white/50 interactive-card"
                     title="進入管理員後台"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -328,14 +328,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
                 <button 
                   onClick={() => setIsPwdModalOpen(true)}
-                  className="p-2 hover:bg-white/10 hover:text-white rounded-lg transition-colors text-white/50"
+                  className="p-2 hover:bg-white/10 hover:text-white rounded-lg transition-colors text-white/50 interactive-card"
                   title="帳號設定"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4v-3.836l8.74-8.74A6 6 0 0115 7z" /></svg>
                 </button>
                 <button 
                   onClick={handleLogout}
-                  className="p-2 hover:bg-red-500/20 hover:text-red-300 rounded-lg transition-colors text-white/50"
+                  className="p-2 hover:bg-red-500/20 hover:text-red-300 rounded-lg transition-colors text-white/50 interactive-card"
                   title="登出"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>

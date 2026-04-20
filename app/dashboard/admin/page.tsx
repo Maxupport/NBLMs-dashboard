@@ -171,13 +171,13 @@ export default function AdminPage() {
       {/* Tabs */}
       <div className="flex gap-6 border-b border-border pl-2">
         <button 
-          className={`pb-3 px-1 text-sm font-medium transition-colors ${activeTab === 'users' ? 'text-primary border-b-2 border-primary' : 'text-white/50 hover:text-white'}`}
+          className={`pb-3 px-1 text-sm font-medium transition-colors interactive-card ${activeTab === 'users' ? 'text-primary border-b-2 border-primary' : 'text-white/50 hover:text-white'}`}
           onClick={() => setActiveTab('users')}
         >
           現有成員
         </button>
         <button 
-          className={`pb-3 px-1 text-sm font-medium transition-colors relative flex items-center gap-2 ${activeTab === 'applications' ? 'text-primary border-b-2 border-primary' : 'text-white/50 hover:text-white'}`}
+          className={`pb-3 px-1 text-sm font-medium transition-colors relative flex items-center gap-2 interactive-card ${activeTab === 'applications' ? 'text-primary border-b-2 border-primary' : 'text-white/50 hover:text-white'}`}
           onClick={() => setActiveTab('applications')}
         >
           待審核申請
@@ -188,7 +188,7 @@ export default function AdminPage() {
           )}
         </button>
         <button 
-          className={`pb-3 px-1 text-sm font-medium transition-colors ${activeTab === 'channels' ? 'text-primary border-b-2 border-primary' : 'text-white/50 hover:text-white'}`}
+          className={`pb-3 px-1 text-sm font-medium transition-colors interactive-card ${activeTab === 'channels' ? 'text-primary border-b-2 border-primary' : 'text-white/50 hover:text-white'}`}
           onClick={() => setActiveTab('channels')}
         >
           📂 頻道總管
@@ -198,9 +198,9 @@ export default function AdminPage() {
       {loading ? (
         <div className="py-12 flex justify-center"><span className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" /></div>
       ) : activeTab === 'users' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col gap-8">
           
-          <div className="lg:col-span-2 glass-panel rounded-xl overflow-hidden">
+          <div className="glass-panel rounded-xl overflow-hidden order-1">
             <table className="w-full text-left text-sm">
               <thead className="bg-black/20 text-white/50">
                 <tr>
@@ -234,7 +234,7 @@ export default function AdminPage() {
                         </span>
                         <button 
                           onClick={() => toggleUserPwd(u.id)} 
-                          className={`text-xs px-1.5 py-0.5 rounded border transition-all ${showUserPwdIds.includes(u.id) ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
+                          className={`text-[10px] px-2 py-0.5 rounded border transition-all whitespace-nowrap shrink-0 ${showUserPwdIds.includes(u.id) ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-white/5 border-white/10 text-white/40 hover:text-white'}`}
                         >
                           {showUserPwdIds.includes(u.id) ? "隱藏" : "查看"}
                         </button>
@@ -253,7 +253,7 @@ export default function AdminPage() {
                     </td>
                     <td className="p-4">
                       {u.role !== 'admin' && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 whitespace-nowrap">
                           <button 
                             onClick={async () => {
                               const newStatus = u.status === 'disabled' ? 'active' : 'disabled';
@@ -300,10 +300,16 @@ export default function AdminPage() {
             </table>
           </div>
 
-          {/* 新增使用者表單 */}
-          <div className="glass-panel p-6 rounded-xl h-fit border-primary/20">
-            <h3 className="font-medium mb-4">主動建立帳號</h3>
-            <form onSubmit={handleCreateUser} className="space-y-4">
+          {/* 手動建立帳位區 - 移動至下方 */}
+          <div className="glass-panel p-6 rounded-xl order-2">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <span>👤</span> 主動建立新帳號
+            </h3>
+            <p className="text-sm text-white/50 mb-6 font-light">
+              管理員可直接為夥伴建立帳號。建立後，系統會自動授權該成員進入所有的「全域熱播頻道」。
+            </p>
+            
+            <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
               <div>
                 <label className="text-xs text-white/50 mb-1 block">使用者名稱 Username</label>
                 <input required type="text" className="glass-input text-sm" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} placeholder="例如: Partner_A" />
