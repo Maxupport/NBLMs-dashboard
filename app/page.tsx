@@ -22,6 +22,7 @@ function AuthContent() {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
+    confirmPassword: "",
     email: "",
     note: ""
   });
@@ -35,6 +36,12 @@ function AuthContent() {
     setLoading(true);
     setError("");
     setSuccess("");
+
+    if (!isLogin && formData.password !== formData.confirmPassword) {
+      setError("兩次輸入的密碼不一致");
+      setLoading(false);
+      return;
+    }
 
     try {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
@@ -63,7 +70,7 @@ function AuthContent() {
           setSuccess("申請已送出！請等待管理員核准後方可登入。");
         }
         setIsLogin(true); // switch back to login tab
-        setFormData({ username: "", password: "", email: "", note: "" });
+        setFormData({ username: "", password: "", confirmPassword: "", email: "", note: "" });
       }
     } catch (err: any) {
       setError(err.message);
@@ -162,6 +169,21 @@ function AuthContent() {
               {showPassword ? "👁️" : "👁️‍🗨️"}
             </button>
           </div>
+
+          {!isLogin && (
+            <div className="relative animate-in fade-in slide-in-from-top-2 duration-300">
+              <label className="block text-xs font-medium text-white/60 mb-1 ml-1">確認密碼 Confirm Password</label>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="confirmPassword"
+                required
+                className="glass-input pr-10"
+                placeholder="再次輸入密碼以確認"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+              />
+            </div>
+          )}
 
           {!isLogin && (
             <>
