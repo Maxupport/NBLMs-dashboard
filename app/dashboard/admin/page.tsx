@@ -206,11 +206,11 @@ export default function AdminPage() {
                 <tr>
                   <th className="p-4 font-medium">帳號</th>
                   <th className="p-4 font-medium">權限</th>
-                  <th className="p-4 font-medium text-center">狀態</th>
+                  <th className="p-4 font-medium text-center whitespace-nowrap">狀態</th>
                   <th className="p-4 font-medium">密碼</th>
-                  <th className="p-4 font-medium text-center">頻道</th>
-                  <th className="p-4 font-medium">登入</th>
-                  <th className="p-4 font-medium">管理</th>
+                  <th className="p-4 font-medium text-center whitespace-nowrap">頻道</th>
+                  <th className="p-4 font-medium whitespace-nowrap">最後登入</th>
+                  <th className="p-4 font-medium whitespace-nowrap">管理</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-sm">
@@ -222,7 +222,7 @@ export default function AdminPage() {
                         {u.role}
                       </span>
                     </td>
-                    <td className="p-4 text-center">
+                    <td className="p-4 text-center whitespace-nowrap">
                       <span className={`px-2 py-1 rounded text-xs ${u.status === 'disabled' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
                         {u.status === 'disabled' ? '已停用' : '正常'}
                       </span>
@@ -240,15 +240,15 @@ export default function AdminPage() {
                         </button>
                       </div>
                     </td>
-                    <td className="p-4 text-center font-mono">
+                    <td className="p-4 text-center font-mono whitespace-nowrap">
                       <span className="text-white/80">{u.channel_count || 0}</span> 
                       {u.role === 'admin' ? (
                         <span className="text-amber-500/50 text-[10px] ml-1">∞</span>
                       ) : (
-                        <span className="text-white/30 text-xs"> / 10</span>
+                        <span className="text-white/30 text-[10px] ml-1">/ 10</span>
                       )}
                     </td>
-                    <td className="p-4 text-white/50 text-xs">
+                    <td className="p-4 text-white/50 text-[10px] whitespace-nowrap">
                       {u.last_login_at ? new Date(u.last_login_at + 'Z').toLocaleString('zh-TW', { hour12: false }) : '從未登入'}
                     </td>
                     <td className="p-4">

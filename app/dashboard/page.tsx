@@ -239,11 +239,11 @@ export default function DashboardPage() {
 
 
   const renderLinksSection = (title: string, icon: string, linkArray: any[], type: string, emptyMessage: string, bgClass = 'bg-white/5', borderClass = 'border-white/10', iconBg = 'bg-blue-500/20', iconBorder = 'border-blue-500/30', emoji = '📓') => (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2 px-1">
+    <div className="space-y-2">
+      <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2 px-1">
         <span>{icon}</span> {title}
       </h3>
-      <div className={`flex flex-row overflow-x-auto gap-4 pb-4 custom-scrollbar scroll-smooth p-4 rounded-2xl bg-black/20 border border-white/5 ${type==='internal' ? 'shadow-[inset_0_2px_10px_rgba(245,158,11,0.05)]' : ''}`}>
+      <div className={`flex flex-row overflow-x-auto gap-3 pb-3 custom-scrollbar scroll-smooth p-2.5 rounded-2xl bg-black/20 border border-white/5 ${type==='internal' ? 'shadow-[inset_0_2px_10px_rgba(245,158,11,0.05)]' : ''}`}>
         {linkArray.length > 0 ? linkArray.map((link: any) => {
           const isInternal = type === 'internal';
           const match = isInternal ? link.url.match(/channel=([^&]+)/) : null;
@@ -290,7 +290,7 @@ export default function DashboardPage() {
                 }
                 fetch(`/api/projects/${selectedProjectId}/track`, { method: 'POST' }).catch(() => {});
               }}
-              className={`p-5 rounded-xl ${bgClass} border ${borderClass} hover:opacity-80 transition-all group relative overflow-hidden flex flex-col h-full min-h-[160px] w-72 shrink-0 cursor-pointer ${draggedLinkId === link.id ? 'opacity-50 blur-sm scale-95' : ''}`}
+              className={`p-4 rounded-xl ${bgClass} border ${borderClass} hover:opacity-80 transition-all group relative overflow-hidden flex flex-col h-full min-h-[130px] w-64 shrink-0 cursor-pointer ${draggedLinkId === link.id ? 'opacity-50 blur-sm scale-95' : ''}`}
             >
                <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex gap-1">
                  {hasWriteAccessProjects.length > 0 && (
@@ -321,13 +321,11 @@ export default function DashboardPage() {
                    </>
                  )}
                </div>
-               <div className={`w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center text-xl mb-4 border ${iconBorder} shrink-0`}>
+               <div className={`w-8 h-8 rounded-md ${iconBg} flex items-center justify-center text-lg mb-3 border ${iconBorder} shrink-0`}>
                  {emoji}
                </div>
-               <h4 className="font-medium text-white/90 mb-1 line-clamp-2 leading-snug">{link.title}</h4>
-               <p className="text-xs text-white/50 line-clamp-2 mb-4 flex-1">
-                 {link.description || '無備註'}
-               </p>
+                     <div className="text-xs font-semibold text-white/90 truncate pr-6 group-hover:text-primary transition-colors leading-tight mb-1">{link.title}</div>
+                     <div className="text-[10px] text-white/40 line-clamp-2 leading-relaxed mb-auto">{link.description || '無備註'}</div>
                {!isInternal && (
                  <div className="flex items-center justify-between text-[10px] text-white/30 border-t border-white/5 pt-3 mt-auto shrink-0">
                    <span className="truncate pr-2">{new URL(link.url).hostname}</span>
@@ -397,7 +395,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in py-4">
+    <div className="space-y-3 animate-in fade-in py-2">
       {/* 專案標題區 */}
       <div className="flex items-center justify-between pb-4 border-b border-border gap-4">
         <div className="flex items-center gap-4 flex-1">
