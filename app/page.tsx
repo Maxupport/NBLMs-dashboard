@@ -89,9 +89,9 @@ function AuthContent() {
         {/* Header */}
         <header className="text-center mb-8">
           <div className="w-16 h-16 bg-white/10 rounded-2xl mx-auto mb-4 flex items-center justify-center border border-white/20 shadow-lg overflow-hidden">
-            <img src="/logo.png" alt="NBLM LinkStation Logo" className="w-full h-full object-cover" />
+            <img src="/logo.png" alt="NBLMs LinkStation Logo" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent">NBLM LinkStation</h1>
+          <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent">NBLMs LinkStation</h1>
           <p className="text-white/60 text-sm mt-1 whitespace-nowrap">NBLM 連結總站</p>
           <div className="mt-4">
             <p className="text-white/40 text-xs tracking-wide uppercase font-medium">

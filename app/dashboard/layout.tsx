@@ -359,7 +359,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             {!isCollapsed && (
               <div className="animate-in fade-in slide-in-from-left-2 duration-300">
-                <h2 className="font-semibold text-sm tracking-tight text-white/90">NBLM LinkStation</h2>
+                <h2 className="font-semibold text-sm tracking-tight text-white/90">NBLMs LinkStation</h2>
                 <p className="text-[10px] text-white/50 uppercase tracking-wider font-semibold">Workspace</p>
               </div>
             )}
