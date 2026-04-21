@@ -1,6 +1,6 @@
-# NotebookLM Manager 系統設計與操作手冊
+# NBLMs LinkStation 系統設計與操作手冊
 
-本文件旨在記錄「NotebookLM 專案資料夾管理系統」的技術架構與操作指南，方便未來維護、交接與佈署。
+本文件旨在記錄「NBLMs LinkStation | NBLM 連結總站」的技術架構與操作指南，方便未來維護、交接與佈署。
 
 ## 1. 系統架構與技術棧
 

@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"], display: "swap" });
 export const metadata: Metadata = {
   title: "NBLMs LinkStation | NBLM 連結總站",
   description: "一站式彙整與管理您所有的 NotebookLM 筆記連結。打造最直覺的知識協作中心，讓團隊存取、分享與追蹤筆記變得前所未有的簡單。",
-  keywords: ["NotebookLM", "NBLM", "筆記彙整", "知識管理", "LinkStation", "連結總站", "數位書櫃"],
+  keywords: ["NBLMs LinkStation", "NBLMs", "NotebookLM", "NBLM", "筆記彙整", "知識管理", "連結總站", "數位書櫃"],
   authors: [{ name: "Nathan & Maxupport" }],
   openGraph: {
     title: "NBLMs LinkStation | NBLM 連結總站",
