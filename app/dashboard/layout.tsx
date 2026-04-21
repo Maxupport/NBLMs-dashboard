@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 
 import { ProjectProvider, useProjects } from "./ProjectContext";
 
-function Sidebar() {
+function Sidebar({ width }: { width: number }) {
   const router = useRouter();
   const pathname = usePathname();
   const { projects, selectedProjectId, setSelectedProjectId, userRole, sortMethod, setSortMethod, reorderProjects } = useProjects();
@@ -20,6 +20,8 @@ function Sidebar() {
   const [showAllAdmin, setShowAllAdmin] = useState(false);
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
+
+  const isCollapsed = width <= 100; // Use a threshold for visual transition
 
   const toggleHideProject = (id: number) => {
     setHiddenProjects(prev => {
@@ -77,54 +79,57 @@ function Sidebar() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-      <div className="flex-1 overflow-y-auto p-4 space-y-1">
-        <div className="flex items-center justify-between mb-3 px-1">
-          <div className="flex items-center gap-2">
-            <div className="text-[10px] uppercase tracking-widest font-bold text-white/30">Projects</div>
-            {/* Sort Dropdown */}
-            <div className="relative group/sort">
-              <button className="text-[10px] text-white/20 hover:text-white/60 transition-colors flex items-center gap-0.5">
-                {sortMethod === 'manual' ? '⇅ 自定義' : sortMethod === 'name' ? '🔤 名稱' : '👤 建立者'}
-              </button>
-              <div className="absolute left-0 top-full mt-1 w-28 bg-card border border-white/10 rounded-lg shadow-2xl opacity-0 invisible group-hover/sort:opacity-100 group-hover/sort:visible transition-all z-20 overflow-hidden backdrop-blur-md">
-                <button onClick={() => setSortMethod('manual')} className={`w-full text-left px-3 py-2 text-[10px] hover:bg-white/5 transition-colors ${sortMethod === 'manual' ? 'text-primary' : 'text-white/60'}`}>⇅ 手動排序</button>
-                <button onClick={() => setSortMethod('name')} className={`w-full text-left px-3 py-2 text-[10px] hover:bg-white/5 transition-colors ${sortMethod === 'name' ? 'text-primary' : 'text-white/60'}`}>🔤 依名稱排序</button>
-                <button onClick={() => setSortMethod('creator')} className={`w-full text-left px-3 py-2 text-[10px] hover:bg-white/5 transition-colors ${sortMethod === 'creator' ? 'text-primary' : 'text-white/60'}`}>👤 依建立者排序</button>
+      <div className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
+        {!isCollapsed && (
+          <div className="flex items-center justify-between mb-3 px-1 animate-in fade-in duration-300">
+            <div className="flex items-center gap-2">
+              <div className="text-[10px] uppercase tracking-widest font-bold text-white/30">Projects</div>
+              {/* Sort Dropdown */}
+              <div className="relative group/sort">
+                <button className="text-[10px] text-white/20 hover:text-white/60 transition-colors flex items-center gap-0.5">
+                  {sortMethod === 'manual' ? '⇅ 自定義' : sortMethod === 'name' ? '🔤 名稱' : '👤 建立者'}
+                </button>
+                <div className="absolute left-0 top-full mt-1 w-28 bg-card border border-white/10 rounded-lg shadow-2xl opacity-0 invisible group-hover/sort:opacity-100 group-hover/sort:visible transition-all z-20 overflow-hidden backdrop-blur-md">
+                  <button onClick={() => setSortMethod('manual')} className={`w-full text-left px-3 py-2 text-[10px] hover:bg-white/5 transition-colors ${sortMethod === 'manual' ? 'text-primary' : 'text-white/60'}`}>⇅ 手動排序</button>
+                  <button onClick={() => setSortMethod('name')} className={`w-full text-left px-3 py-2 text-[10px] hover:bg-white/5 transition-colors ${sortMethod === 'name' ? 'text-primary' : 'text-white/60'}`}>🔤 依名稱排序</button>
+                  <button onClick={() => setSortMethod('creator')} className={`w-full text-left px-3 py-2 text-[10px] hover:bg-white/5 transition-colors ${sortMethod === 'creator' ? 'text-primary' : 'text-white/60'}`}>👤 依建立者排序</button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {userRole === 'admin' && hiddenCount > 0 && (
-            <button 
-              onClick={() => setShowAllAdmin(p => !p)}
-              className="text-[10px] text-white/40 hover:text-white/70 transition-colors flex items-center gap-1"
-              title={showAllAdmin ? '隱藏被排除的專案' : `顯示 ${hiddenCount} 個已隱藏專案`}
-            >
-              {showAllAdmin ? (
-                <><span>👁️</span> 全部顯示中</>
-              ) : (
-                <><span className="font-bold text-white/60">{hiddenCount}</span>↗ 隱藏中</>
-              )}
-            </button>
-          )}
-        </div>
+            {userRole === 'admin' && hiddenCount > 0 && (
+              <button 
+                onClick={() => setShowAllAdmin(p => !p)}
+                className="text-[10px] text-white/40 hover:text-white/70 transition-colors flex items-center gap-1"
+                title={showAllAdmin ? '隱藏被排除的專案' : `顯示 ${hiddenCount} 個已隱藏專案`}
+              >
+                {showAllAdmin ? (
+                  <><span>👁️</span></>
+                ) : (
+                  <><span className="font-bold text-white/60">{hiddenCount}</span>↗</>
+                )}
+              </button>
+            )}
+          </div>
+        )}
 
         <button
           onClick={() => {
              setSelectedProjectId(null);
              router.push('/dashboard');
           }}
-          className={`w-full text-left px-4 py-2.5 rounded-xl transition-all flex items-center gap-3 mb-2 border interactive-card ${
+          title={isCollapsed ? "新增專案 Channel" : ""}
+          className={`w-full transition-all flex items-center mb-2 border interactive-card ${isCollapsed ? 'justify-center py-3 rounded-2xl' : 'px-4 py-2.5 rounded-xl gap-3'} ${
             selectedProjectId === null && !pathname?.includes('/feedback') 
               ? 'bg-primary/10 text-primary-foreground border-primary/30 shadow-[0_0_15px_rgba(255,255,255,0.05)] font-semibold' 
               : 'border-white/5 bg-white/[0.02] text-white/70 hover:bg-white/10 hover:border-white/10 hover:text-white font-medium'
           }`}
         >
-          <span className="text-lg opacity-90">🏠</span> 
-          <span>新增專案 Channel</span>
+          <span className="text-lg opacity-90 shrink-0">🏠</span> 
+          {!isCollapsed && <span className="truncate">新增專案 Channel</span>}
         </button>
 
-      <div className="ml-5 pl-2 border-l border-white/10 space-y-1 py-1">
+      <div className={`${isCollapsed ? 'space-y-2' : 'ml-5 pl-2 border-l border-white/10 space-y-1 py-1'}`}>
         {normalProjects.map(p => (
           <div 
             key={p.id} 
@@ -148,24 +153,28 @@ function Sidebar() {
                 }
               }}
               disabled={p.status === 'disabled'}
-              className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm flex items-center gap-2 pr-8 relative interactive-card ${
+              title={isCollapsed ? p.name : ""}
+              className={`w-full text-left transition-all text-sm flex items-center relative interactive-card ${isCollapsed ? 'justify-center p-2 rounded-xl' : 'px-3 py-2 rounded-lg gap-2 pr-8'} ${
                 p.status === 'disabled' ? 'opacity-60 cursor-not-allowed bg-red-900/10 text-white/40 border border-red-500/10' :
                 selectedProjectId === p.id ? 'bg-white/10 text-white border border-white/20 shadow-lg' : 'text-white/50 hover:bg-white/5 hover:text-white'
               }`}
             >
               {/* horizontal indicator line */}
-              <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-2 h-[1px] bg-white/10 group-hover:bg-white/30 transition-colors" />
+              {!isCollapsed && (
+                <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-2 h-[1px] bg-white/10 group-hover:bg-white/30 transition-colors" />
+              )}
               
-              <span className={p.status === 'disabled' ? 'opacity-50 grayscale' : ''}>{p.icon}</span> 
-              <span className={`truncate ${p.status === 'disabled' ? 'line-through' : ''} ${selectedProjectId === p.id ? 'font-medium' : ''}`}>{p.name}</span>
-              {sortMethod === 'manual' && (
+              <span className={`shrink-0 ${p.status === 'disabled' ? 'opacity-50 grayscale' : ''}`}>{p.icon}</span> 
+              {!isCollapsed && <span className={`truncate ${p.status === 'disabled' ? 'line-through' : ''} ${selectedProjectId === p.id ? 'font-medium' : ''}`}>{p.name}</span>}
+              
+              {!isCollapsed && sortMethod === 'manual' && (
                 <span className="opacity-0 group-hover:opacity-40 text-[10px] ml-auto font-mono pointer-events-none">⠿</span>
               )}
-              {p.status === 'disabled' && (
-                <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded ml-auto shrink-0 whitespace-nowrap">🚫 停用</span>
+              {!isCollapsed && p.status === 'disabled' && (
+                <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded ml-auto shrink-0 whitespace-nowrap">🚫</span>
               )}
             </button>
-            {userRole === 'admin' && (
+            {userRole === 'admin' && !isCollapsed && (
               <button
                 onClick={(e) => { e.stopPropagation(); toggleHideProject(p.id); }}
                 className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 opacity-0 group-hover:opacity-100 text-white/30 hover:text-white/70 transition-all rounded-md hover:bg-white/10"
@@ -182,17 +191,17 @@ function Sidebar() {
         ))}
       </div>
       
-      {normalProjects.length === 0 && (
+      {normalProjects.length === 0 && !isCollapsed && (
         <div className="text-xs text-white/30 italic p-3 text-center">
           {userRole === 'admin' && hiddenCount > 0 && !showAllAdmin
-            ? `${hiddenCount} 個專案已隱藏。點擊上方題目列示全部。`
+            ? `${hiddenCount} 個專案已隱藏`
             : '尚無專案'}
         </div>
       )}
       </div>
       
       {/* Bottom Global Links */}
-      <div className="p-4 border-t border-white/5 bg-black/10 space-y-1">
+      <div className={`p-4 border-t border-white/5 bg-black/10 space-y-2`}>
         {specialProject && (
           <button
             onClick={() => {
@@ -204,15 +213,13 @@ function Sidebar() {
               }
             }}
             disabled={specialProject.status === 'disabled'}
-            className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 interactive-card ${
+            title={isCollapsed ? "使用說明＆關於我" : ""}
+            className={`w-full text-left transition-colors text-sm flex items-center interactive-card ${isCollapsed ? 'justify-center p-2 rounded-xl' : 'px-3 py-2 rounded-lg gap-2'} ${
               selectedProjectId === specialProject.id ? 'bg-white/10 text-white border border-white/20 shadow-lg' : 'text-white/60 hover:bg-white/5 hover:text-white'
             }`}
           >
-            <span className={specialProject.status === 'disabled' ? 'opacity-50 grayscale' : ''}>📄</span> 
-            <span className={`truncate ${specialProject.status === 'disabled' ? 'line-through' : ''}`}>使用說明＆關於我</span>
-            {specialProject.status === 'disabled' && (
-              <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded ml-auto shrink-0 whitespace-nowrap">🚫</span>
-            )}
+            <span className={`shrink-0 ${specialProject.status === 'disabled' ? 'opacity-50 grayscale' : ''}`}>📄</span> 
+            {!isCollapsed && <span className={`truncate ${specialProject.status === 'disabled' ? 'line-through' : ''}`}>使用說明＆關於我</span>}
           </button>
         )}
 
@@ -220,11 +227,13 @@ function Sidebar() {
           onClick={() => {
              router.push('/dashboard/feedback');
           }}
-          className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 interactive-card ${
+          title={isCollapsed ? "使用者反饋留言區" : ""}
+          className={`w-full text-left transition-colors text-sm flex items-center interactive-card ${isCollapsed ? 'justify-center p-2 rounded-xl' : 'px-3 py-2 rounded-lg gap-2'} ${
             pathname?.includes('/feedback') ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-lg shadow-indigo-500/10' : 'text-white/60 hover:bg-white/5 hover:text-white'
           }`}
         >
-          <span>💬</span> 使用者反饋留言區
+          <span className="shrink-0">💬</span>
+          {!isCollapsed && <span className="truncate">使用者反饋留言區</span>}
         </button>
       </div>
     </div>
@@ -235,6 +244,50 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const [user, setUser] = useState<{ username: string; role: string; id: string } | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Resize logic
+  const [sidebarWidth, setSidebarWidth] = useState(256);
+  const isResizing = useRef(false);
+
+  useEffect(() => {
+    const savedWidth = localStorage.getItem('sidebar_width');
+    if (savedWidth) {
+      setSidebarWidth(Number(savedWidth));
+    }
+  }, []);
+
+  const startResizing = useCallback((e: React.MouseEvent) => {
+    isResizing.current = true;
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", stopResizing);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    isResizing.current = false;
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", stopResizing);
+    document.body.style.cursor = "default";
+    document.body.style.userSelect = "auto";
+  }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing.current) return;
+    
+    let newWidth = e.clientX;
+    const maxWidth = window.innerWidth * 0.5;
+    
+    // Snap to collapsed mode
+    if (newWidth < 120) {
+      newWidth = 88;
+    } else if (newWidth > maxWidth) {
+      newWidth = maxWidth;
+    }
+
+    setSidebarWidth(newWidth);
+    localStorage.setItem('sidebar_width', newWidth.toString());
+  }, []);
 
   // Change Password state
   const [isPwdModalOpen, setIsPwdModalOpen] = useState(false);
@@ -288,40 +341,58 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) return null;
 
+  const isCollapsed = sidebarWidth <= 100;
+
   return (
     <ProjectProvider userRole={user.role} userId={(user.id || (user as any).sub)?.toString() || ''}>
       <div className="flex h-screen bg-background overflow-hidden relative">
         
-        {/* 背景裝飾 */}
-        <aside className="w-64 border-r border-border bg-card/50 flex flex-col pt-4">
-          <div className="px-6 pb-4 border-b border-white/5 flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-primary/20">
+        {/* Sidebar */}
+        <aside 
+          style={{ width: `${sidebarWidth}px` }}
+          className="border-r border-border bg-card/50 flex flex-col pt-4 relative transition-[width] duration-75 ease-out"
+        >
+          {/* Logo Section */}
+          <div className={`${isCollapsed ? 'px-2 justify-center' : 'px-6'} pb-4 border-b border-white/5 flex items-center gap-3 transition-all`}>
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-primary/20 shrink-0">
               N
             </div>
-            <div>
-              <h2 className="font-semibold text-sm tracking-tight text-white/90">NBLMs</h2>
-              <p className="text-[10px] text-white/50 uppercase tracking-wider font-semibold">Workspace</p>
-            </div>
+            {!isCollapsed && (
+              <div className="animate-in fade-in slide-in-from-left-2 duration-300">
+                <h2 className="font-semibold text-sm tracking-tight text-white/90">NBLM LinkStation</h2>
+                <p className="text-[10px] text-white/50 uppercase tracking-wider font-semibold">Workspace</p>
+              </div>
+            )}
           </div>
 
-          <Sidebar />
+          <Sidebar width={sidebarWidth} />
 
-          {/* 使用者區塊 */}
-          <div className="p-4 border-t border-border bg-black/20 mt-auto">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-white/90 truncate">{user.username}</span>
-                <span className="text-xs text-white/50 capitalize flex items-center gap-1">
-                  <span className={`w-1.5 h-1.5 rounded-full ${user.role === 'admin' ? 'bg-amber-400' : 'bg-green-400'}`} />
-                  {user.role}
-                </span>
-              </div>
-              <div className="flex gap-1">
+          {/* User Section */}
+          <div className={`${isCollapsed ? 'p-2' : 'p-4'} border-t border-border bg-black/20 mt-auto transition-all`}>
+            <div className={`flex items-center ${isCollapsed ? 'flex-col gap-3' : 'justify-between'}`}>
+              {!isCollapsed ? (
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-medium text-white/90 truncate">{user.username}</span>
+                  <span className="text-xs text-white/50 capitalize flex items-center gap-1">
+                    <span className={`w-1.5 h-1.5 rounded-full ${user.role === 'admin' ? 'bg-amber-400' : 'bg-green-400'}`} />
+                    {user.role}
+                  </span>
+                </div>
+              ) : (
+                <div 
+                  className={`w-8 h-8 rounded-full border-2 ${user.role === 'admin' ? 'border-amber-400' : 'border-green-400'} flex items-center justify-center text-[10px] font-bold text-white shadow-sm ring-4 ring-white/5`}
+                  title={`${user.username} (${user.role})`}
+                >
+                  {user.username[0].toUpperCase()}
+                </div>
+              )}
+              
+              <div className={`flex ${isCollapsed ? 'flex-col gap-2' : 'gap-1'}`}>
                 {user.role === 'admin' && (
                   <button 
                     onClick={() => router.push('/dashboard/admin')}
                     className="p-2 hover:bg-amber-500/20 hover:text-amber-300 rounded-lg transition-colors text-white/50 interactive-card"
-                    title="進入管理員後台"
+                    title="管理網頁後台"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   </button>
@@ -329,25 +400,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <button 
                   onClick={() => setIsPwdModalOpen(true)}
                   className="p-2 hover:bg-white/10 hover:text-white rounded-lg transition-colors text-white/50 interactive-card"
-                  title="帳號設定"
+                  title="帳號安全設定"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4v-3.836l8.74-8.74A6 6 0 0115 7z" /></svg>
                 </button>
                 <button 
                   onClick={handleLogout}
                   className="p-2 hover:bg-red-500/20 hover:text-red-300 rounded-lg transition-colors text-white/50 interactive-card"
-                  title="登出"
+                  title="安全登出"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </button>
               </div>
             </div>
           </div>
+
+          {/* Resizer Handle */}
+          <div 
+            onMouseDown={startResizing}
+            className="absolute top-0 -right-1 w-2 h-full cursor-col-resize hover:bg-primary/30 transition-colors z-50 group"
+          >
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-8 bg-white/10 rounded-full group-hover:bg-primary/50 transition-colors" />
+          </div>
         </aside>
 
-        {/* 內容區 */}
+        {/* content area */}
         <main className="flex-1 flex flex-col h-screen overflow-hidden">
-          {/* 因為我們在子頁面中也有 Header，為了彈性考量，把整個 children 放在這裡 */}
           <div className="flex-1 overflow-y-auto">
             {children}
           </div>
