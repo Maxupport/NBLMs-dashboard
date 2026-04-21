@@ -64,12 +64,21 @@ export default function FeedbackPage() {
         </div>
       </div>
 
-      {!isOpen && userRole !== 'admin' ? (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-300 p-4 rounded-xl text-sm flex items-center justify-center gap-2">
-          <span>🔒</span> 管理員目前已關閉留言板的發言功能，僅供檢視。
+      {/* 留言發佈區 */}
+      {!settingsData ? (
+        <div className="glass-panel p-8 rounded-2xl border border-white/10 flex items-center justify-center animate-pulse">
+          <div className="flex items-center gap-3 text-white/20 text-sm">
+            <span className="w-5 h-5 border-2 border-white/10 border-t-white/30 rounded-full animate-spin" />
+            正在確認留言板狀態...
+          </div>
+        </div>
+      ) : !isOpen && userRole !== 'admin' ? (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-300 p-6 rounded-xl text-sm flex flex-col items-center justify-center gap-3 animate-in fade-in duration-300">
+          <span className="text-2xl">🔒</span>
+          <p className="font-medium">管理員目前已關閉留言板的發言功能，僅供檢視。</p>
         </div>
       ) : (
-        <div className="glass-panel p-5 rounded-2xl border border-white/10 shadow-lg relative overflow-hidden">
+        <div className="glass-panel p-5 rounded-2xl border border-white/10 shadow-lg relative overflow-hidden animate-in fade-in duration-500">
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <form onSubmit={handleSubmit} className="relative z-10 space-y-4">
             <div className="relative">
