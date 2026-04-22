@@ -127,7 +127,7 @@ export default function AdminPage() {
     });
     if (res.ok) {
       setIsMembersModalOpen(false);
-      toast.success('專案成員權限更新成功');
+      toast.success('頻道成員權限更新成功');
       mutateChannels();
     } else {
       const data = await res.json();
@@ -306,7 +306,7 @@ export default function AdminPage() {
               <span>👤</span> 主動建立新帳號
             </h3>
             <p className="text-sm text-white/50 mb-6 font-light">
-              管理員可直接為夥伴建立帳號。建立後，系統會自動授權該成員進入所有的「全域熱播頻道」。
+              管理員可直接為夥伴建立帳號。建立後，系統會自動授權該成員進入所有的「全域使用說明頻道」。
             </p>
             
             <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">

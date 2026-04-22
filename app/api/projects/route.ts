@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 }
 
 const projectSchema = z.object({
-  name: z.string().min(1, '專案名稱不得為空'),
+  name: z.string().min(1, '頻道名稱不得為空'),
   description: z.string().optional(),
   icon: z.string().optional(),
   color: z.string().optional(),
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       });
       const currentCount = parseInt((limitRes.rows[0]?.count as any) || 0);
       if (currentCount >= 10) {
-        return NextResponse.json({ error: '一般成員最多只能建立 10 個頂層頻道專案' }, { status: 403 });
+        return NextResponse.json({ error: '一般成員最多只能建立 10 個頂層頻道' }, { status: 403 });
       }
     }
 

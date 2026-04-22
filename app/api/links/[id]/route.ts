@@ -27,7 +27,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
       if (res.rows.length > 0) canDelete = true;
     }
 
-    if (!canDelete) return NextResponse.json({ error: '只有專案建立者或管理員可以刪除連結' }, { status: 403 });
+    if (!canDelete) return NextResponse.json({ error: '只有頻道建立者或管理員可以刪除連結' }, { status: 403 });
 
     await db.execute({
       sql: 'DELETE FROM notebook_links WHERE id = ?',
@@ -69,7 +69,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       if (res.rows.length > 0) canEdit = true;
     }
 
-    if (!canEdit) return NextResponse.json({ error: '只有專案建立者或管理員可以編輯連結' }, { status: 403 });
+    if (!canEdit) return NextResponse.json({ error: '只有頻道建立者或管理員可以編輯連結' }, { status: 403 });
 
     await db.execute({
       sql: 'UPDATE notebook_links SET title = ?, url = ?, description = ?, category = ? WHERE id = ?',

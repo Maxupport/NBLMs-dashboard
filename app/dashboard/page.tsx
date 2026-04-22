@@ -101,7 +101,7 @@ export default function DashboardPage() {
         id: `sub-${p.id}`,
         title: p.name,
         url: `/dashboard?channel=${p.id}`,
-        description: p.description || '子頻道專案',
+        description: p.description || '子頻道',
         created_at: (p as any).created_at || new Date().toISOString(),
         icon: p.icon
       }));
@@ -143,7 +143,7 @@ export default function DashboardPage() {
       body: JSON.stringify(newProject)
     });
     if (res.ok) {
-      toast.success('專案建立成功！');
+      toast.success('頻道建立成功！');
       setIsNewProjectModalOpen(false);
       setNewProject({ name: '', description: '', parent_id: null });
       await refreshProjects();
@@ -162,7 +162,7 @@ export default function DashboardPage() {
       body: JSON.stringify({ name: editProjectData.name, description: editProjectData.description, parent_id: editProjectData.parent_id, color: editProjectData.color })
     });
     if (res.ok) {
-      toast.success('專案更新成功！');
+      toast.success('頻道更新成功！');
       setIsEditProjectModalOpen(false);
       await refreshProjects();
     } else {
@@ -396,7 +396,7 @@ export default function DashboardPage() {
           <div className="relative z-10">
             <h2 className="text-3xl font-semibold mb-3">歡迎來到 Workspace</h2>
             <p className="text-white/60 max-w-lg text-sm leading-relaxed">
-              在這裡您可以集中管理所有散落的 NBLMs 專案。透過左側選單進入現有專案，或建立新專案以開始整理連結。
+              在這裡您可以集中管理所有散落的 NBLMs 頻道。透過左側選單進入現有頻道，或建立新頻道以開始整理連結。
             </p>
             
             <div className="mt-8 flex gap-4">
@@ -404,7 +404,7 @@ export default function DashboardPage() {
                 onClick={() => setIsNewProjectModalOpen(true)}
                 className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors text-sm font-medium shadow-lg shadow-primary/20"
               >
-                <span className="mr-2">+</span>馬上建立新專案
+                <span className="mr-2">+</span>馬上建立新頻道
               </button>
             </div>
           </div>
@@ -431,7 +431,7 @@ export default function DashboardPage() {
                     setIsEditProjectModalOpen(true);
                   }} 
                   className="text-white/20 hover:text-white/80 p-1 opacity-0 group-hover:opacity-100 transition-all rounded bg-white/5 hover:bg-white/10"
-                  title="編輯專案設定"
+                  title="編輯頻道設定"
                 >
                   ✎
                 </button>
@@ -540,11 +540,11 @@ export default function DashboardPage() {
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in transition-all">
              <div className="bg-card w-full max-w-md rounded-2xl border border-white/10 p-6 shadow-2xl relative">
                 <button onClick={() => setIsEditProjectModalOpen(false)} className="absolute top-4 right-4 text-white/40 hover:text-white">✕</button>
-                <h3 className="text-xl font-medium mb-4">編輯專案設定</h3>
+                <h3 className="text-xl font-medium mb-4">編輯頻道設定</h3>
                 <form onSubmit={handleEditProject} className="space-y-4">
                   <div>
-                    <label className="text-xs text-white/50 block mb-1">專案名稱</label>
-                    <input required autoFocus className="glass-input" value={editProjectData.name} onChange={e => setEditProjectData({...editProjectData, name: e.target.value})} placeholder="專案名稱" />
+                    <label className="text-xs text-white/50 block mb-1">頻道名稱</label>
+                    <input required autoFocus className="glass-input" value={editProjectData.name} onChange={e => setEditProjectData({...editProjectData, name: e.target.value})} placeholder="頻道名稱" />
                   </div>
                   <div>
                     <label className="text-xs text-white/50 block mb-1">所屬母頻道 (Parent Channel)</label>
@@ -560,8 +560,8 @@ export default function DashboardPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-white/50 block mb-1">專案描述</label>
-                    <textarea className="glass-input resize-none h-20" value={editProjectData.description} onChange={e => setEditProjectData({...editProjectData, description: e.target.value})} placeholder="簡述這個專案的目標與範圍..." />
+                    <label className="text-xs text-white/50 block mb-1">頻道描述</label>
+                    <textarea className="glass-input resize-none h-20" value={editProjectData.description} onChange={e => setEditProjectData({...editProjectData, description: e.target.value})} placeholder="簡述這個頻道的目標與範圍..." />
                   </div>
                   {/* Color Picker - only for parent channels */}
                   {!editProjectData.parent_id && (
@@ -583,16 +583,16 @@ export default function DashboardPage() {
                   )}
                   <div className="flex justify-between items-center pt-4">
                     <button type="button" onClick={async () => {
-                      if(confirm('確定要永久刪除此專案嗎？動作無法復原。')) {
+                      if(confirm('確定要永久刪除此頻道嗎？動作無法復原。')) {
                         const res = await fetch(`/api/projects/${selectedProjectId}`, { method: 'DELETE' });
                         if(res.ok) {
-                          toast.success('已刪除專案');
+                          toast.success('已刪除頻道');
                           setIsEditProjectModalOpen(false);
                           setSelectedProjectId(null);
                           await refreshProjects();
                         }
                       }
-                    }} className="px-3 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">刪除專案</button>
+                    }} className="px-3 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">刪除頻道</button>
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setIsEditProjectModalOpen(false)} className="px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 transition-colors">取消</button>
                       <button type="submit" className="px-4 py-2 rounded-lg text-sm bg-primary text-white hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">儲存變更</button>
@@ -691,8 +691,8 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in">
            <div className="bg-card w-full max-w-lg rounded-2xl border border-white/10 p-6 shadow-2xl relative flex flex-col max-h-[80vh]">
               <button onClick={() => setIsMembersModalOpen(false)} className="absolute top-4 right-4 text-white/40 hover:text-white">✕</button>
-              <h3 className="text-xl font-medium mb-1">專案成員存取權限</h3>
-              <p className="text-xs text-white/40 mb-4 pb-4 border-b border-white/10">打勾表示授權該使用者可以「唯讀」此專案的所有筆記本連結。</p>
+              <h3 className="text-xl font-medium mb-1">頻道成員存取權限</h3>
+              <p className="text-xs text-white/40 mb-4 pb-4 border-b border-white/10">打勾表示授權該使用者可以「唯讀」此頻道的所有筆記本連結。</p>
               
               <div className="overflow-y-auto flex-1 space-y-2 mb-4">
                 {allUsers.map(u => {
@@ -771,10 +771,10 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in">
            <div className="bg-card w-full max-w-md rounded-2xl border border-white/10 p-6 shadow-2xl relative">
               <button onClick={() => setIsNewProjectModalOpen(false)} className="absolute top-4 right-4 text-white/40 hover:text-white">✕</button>
-              <h3 className="text-xl font-medium mb-4">{newProject.parent_id ? '新增子頻道' : '建立新專案'}</h3>
+              <h3 className="text-xl font-medium mb-4">{newProject.parent_id ? '新增子頻道' : '建立新頻道'}</h3>
               <form onSubmit={handleCreateProject} className="space-y-4">
                 <div>
-                  <label className="text-xs text-white/50 block mb-1">{newProject.parent_id ? '子頻道名稱' : '專案名稱'}</label>
+                  <label className="text-xs text-white/50 block mb-1">{newProject.parent_id ? '子頻道名稱' : '頻道名稱'}</label>
                   <input required autoFocus className="glass-input" value={newProject.name} onChange={e => setNewProject({...newProject, name: e.target.value})} placeholder={newProject.parent_id ? '例如: 2024 Q1 報告' : '例如: 2024 行銷企劃研究'} />
                 </div>
                 {!newProject.parent_id && (
@@ -798,8 +798,8 @@ export default function DashboardPage() {
                   </div>
                 )}
                 <div>
-                  <label className="text-xs text-white/50 block mb-1">描述 (選填)</label>
-                  <textarea className="glass-input resize-none h-20" value={newProject.description} onChange={e => setNewProject({...newProject, description: e.target.value})} placeholder="簡述這個專案的目標與範圍..." />
+                  <label className="text-xs text-white/50 block mb-1">頻道描述 (選填)</label>
+                  <textarea className="glass-input resize-none h-20" value={newProject.description} onChange={e => setNewProject({...newProject, description: e.target.value})} placeholder="簡述這個頻道的目標與範圍..." />
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <button type="button" onClick={() => setIsNewProjectModalOpen(false)} className="px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 transition-colors">取消</button>

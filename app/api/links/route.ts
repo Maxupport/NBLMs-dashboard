@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('projectId');
     
-    if (!projectId) return NextResponse.json({ error: '缺少專案 ID' }, { status: 400 });
+    if (!projectId) return NextResponse.json({ error: '缺少頻道 ID' }, { status: 400 });
 
     const db = await getDb();
     
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
       if (res.rows.length > 0) canWrite = true;
     }
 
-    if (!canWrite) return NextResponse.json({ error: '只有專案建立者或管理員可以新增連結' }, { status: 403 });
+    if (!canWrite) return NextResponse.json({ error: '只有頻道建立者或管理員可以新增連結' }, { status: 403 });
 
     const result = await db.execute({
       sql: `INSERT INTO notebook_links (project_id, title, url, description, category) VALUES (?, ?, ?, ?, ?)`,

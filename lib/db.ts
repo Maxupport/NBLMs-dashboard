@@ -168,7 +168,7 @@ async function initSchema(db: Client) {
       });
     }
 
-    // 確保有全域歡迎區專案
+    // 確保有全域歡迎區頻道
     const welcomeRes = await db.execute("SELECT id FROM projects WHERE is_global_welcome = 1");
     if (welcomeRes.rows.length === 0) {
       const adminRes = await db.execute("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
@@ -177,7 +177,7 @@ async function initSchema(db: Client) {
           sql: "INSERT INTO projects (name, description, icon, owner_id, is_global_welcome) VALUES ('全域歡迎區', '系統預設配置的全域存取空間', '🌟', ?, 1)",
           args: [adminRes.rows[0].id]
         });
-        console.log('✅ 預設全域歡迎區專案已建立');
+        console.log('✅ 預設全域歡迎區頻道已建立');
       }
     }
   } catch (err) {
