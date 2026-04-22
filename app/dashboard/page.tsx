@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -71,44 +71,45 @@ export default function DashboardPage() {
   const isOwnerOrAdmin = !!(isAdmin || 
     (activeProject && (activeProject as any).owner_id?.toString() === userId) ||
     (parentProject && (parentProject as any).owner_id?.toString() === userId));
-  const hasWriteAccessProjects = projects.filter((p: any) => {
+  const hasWriteAccessProjects = useMemo(() => projects.filter((p: any) => {
     if (isAdmin) return true;
     if (p.owner_id?.toString() === userId) return true;
     if (p.parent_id) {
-      const parent = projects.find(parentProj => parentProj.id === p.parent_id);
+      const parent = projects.find((parentProj: any) => parentProj.id === p.parent_id);
       if (parent && (parent as any).owner_id?.toString() === userId) return true;
     }
     return false;
-  });
+  }), [projects, isAdmin, userId]);
 
   const { data: linksData, mutate: mutateLinks, isLoading: loadingLinks } = useSWR(
     selectedProjectId ? `/api/links?projectId=${selectedProjectId}` : null,
-    fetcher
+    fetcher,
+    { dedupingInterval: 10000, revalidateOnFocus: false }
   );
-  const rawLinks = linksData?.links || [];
-  const links = rawLinks.filter((l: any) => 
+  const rawLinks: any[] = linksData?.links || [];
+  const links = useMemo(() => rawLinks.filter((l: any) => 
+    !searchQuery ||
     l.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
     (l.description && l.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  ), [rawLinks, searchQuery]);
 
-  const internalLinks = links.filter((l: any) => l.url?.includes('dashboard?channel='));
-  
-  // 加入子頻道的「虛擬連結」到內部連結區
-  const subChannelLinks = projects
-    .filter(p => p.parent_id === selectedProjectId)
-    .map(p => ({
-      id: `sub-${p.id}`, // 使用特殊 ID 避免衝突
-      title: p.name,
-      url: `/dashboard?channel=${p.id}`,
-      description: p.description || '子頻道專案',
-      created_at: (p as any).created_at || new Date().toISOString(),
-      icon: p.icon
-    }));
-
-  const allInternalLinks = [...subChannelLinks, ...internalLinks];
-  
-  const aiToolLinks = links.filter((l: any) => !l.url?.includes('dashboard?channel=') && l.category === 'ai_tool');
-  const otherLinks = links.filter((l: any) => !l.url?.includes('dashboard?channel=') && l.category !== 'ai_tool');
+  const { internalLinks, aiToolLinks, otherLinks, allInternalLinks } = useMemo(() => {
+    const internalLinks = links.filter((l: any) => l.url?.includes('dashboard?channel='));
+    const subChannelLinks = projects
+      .filter(p => p.parent_id === selectedProjectId)
+      .map(p => ({
+        id: `sub-${p.id}`,
+        title: p.name,
+        url: `/dashboard?channel=${p.id}`,
+        description: p.description || '子頻道專案',
+        created_at: (p as any).created_at || new Date().toISOString(),
+        icon: p.icon
+      }));
+    const allInternalLinks = [...subChannelLinks, ...internalLinks];
+    const aiToolLinks = links.filter((l: any) => !l.url?.includes('dashboard?channel=') && l.category === 'ai_tool');
+    const otherLinks = links.filter((l: any) => !l.url?.includes('dashboard?channel=') && l.category !== 'ai_tool');
+    return { internalLinks, aiToolLinks, otherLinks, allInternalLinks };
+  }, [links, projects, selectedProjectId]);
 
   const handleCopyLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,14 +241,14 @@ export default function DashboardPage() {
     setDraggedLinkType(null);
   };
 
-  const handleDeleteLink = async (id: number) => {
+  const handleDeleteLink = useCallback(async (id: number) => {
     if (!confirm('確定要刪除這個連結嗎？')) return;
     const res = await fetch(`/api/links/${id}`, { method: 'DELETE' });
     if (res.ok) {
       toast.success('已刪除連結');
       mutateLinks();
     }
-  };
+  }, [mutateLinks]);
 
   const openMembersModal = async () => {
     // 取得所有使用者與該專案成員

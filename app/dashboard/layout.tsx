@@ -37,9 +37,12 @@ function Sidebar({ width }: { width: number }) {
     e.dataTransfer.setData('text/plain', id.toString());
   };
 
+  const dragOverIdRef = useRef<number | null>(null);
+
   const handleDragOver = (e: React.DragEvent, id: number) => {
     e.preventDefault();
-    if (draggedId !== id) {
+    if (draggedId !== id && dragOverIdRef.current !== id) {
+      dragOverIdRef.current = id;
       setDragOverId(id);
     }
   };
@@ -59,6 +62,7 @@ function Sidebar({ width }: { width: number }) {
     }
     setDraggedId(null);
     setDragOverId(null);
+    dragOverIdRef.current = null;
   };
 
   const toggleHideProject = (id: number) => {
@@ -111,7 +115,7 @@ function Sidebar({ width }: { width: number }) {
           onDragStart={(e) => handleDragStart(e, p.id)}
           onDragOver={(e) => handleDragOver(e, p.id)}
           onDrop={(e) => handleDrop(e, p.id)}
-          onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+          onDragEnd={() => { setDraggedId(null); setDragOverId(null); dragOverIdRef.current = null; }}
         >
           {dragOverId === p.id && (
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50 animate-pulse pointer-events-none" />

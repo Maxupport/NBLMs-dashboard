@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 
@@ -48,7 +48,10 @@ export function useProjects() {
 }
 
 export function ProjectProvider({ children, userRole, userId }: { children: React.ReactNode, userRole: string, userId: string }) {
-  const { data, mutate } = useSWR('/api/projects', fetcher);
+  const { data, mutate } = useSWR('/api/projects', fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 10000,
+  });
   const [sortMethod, setSortMethodState] = useState<'manual' | 'name' | 'creator'>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('project_sort_method') as any) || 'manual';
@@ -56,15 +59,15 @@ export function ProjectProvider({ children, userRole, userId }: { children: Reac
     return 'manual';
   });
 
-  const setSortMethod = (method: 'manual' | 'name' | 'creator') => {
+  const setSortMethod = useCallback((method: 'manual' | 'name' | 'creator') => {
     setSortMethodState(method);
     localStorage.setItem('project_sort_method', method);
-  };
+  }, []);
 
   const rawProjects: Project[] = data?.projects || [];
   
-  // Computed sorted projects
-  const projects = [...rawProjects].sort((a, b) => {
+  // Memoized sorted projects — only recomputes when rawProjects or sortMethod changes
+  const projects = useMemo(() => [...rawProjects].sort((a, b) => {
     if (sortMethod === 'name') {
       return a.name.localeCompare(b.name, 'zh-TW');
     }
@@ -73,9 +76,8 @@ export function ProjectProvider({ children, userRole, userId }: { children: Reac
       const nameB = b.owner_username || '';
       return nameA.localeCompare(nameB, 'zh-TW');
     }
-    // manual or default
     return (a.sort_order || 0) - (b.sort_order || 0);
-  });
+  }), [rawProjects, sortMethod]);
   
   const [selectedProjectId, setSelectedProjectIdState] = useState<number | null>(null);
 
@@ -87,7 +89,7 @@ export function ProjectProvider({ children, userRole, userId }: { children: Reac
     }
   }, []);
 
-  const setSelectedProjectId = (id: number | null) => {
+  const setSelectedProjectId = useCallback((id: number | null) => {
     setSelectedProjectIdState(id);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -98,16 +100,14 @@ export function ProjectProvider({ children, userRole, userId }: { children: Reac
       }
       window.history.pushState({}, '', url);
     }
-  };
+  }, []);
 
-  const refreshProjects = async () => {
+  const refreshProjects = useCallback(async () => {
     await mutate();
-  };
+  }, [mutate]);
 
-  const reorderProjects = async (newOrder: Project[]) => {
-    // Optimistic update
+  const reorderProjects = useCallback(async (newOrder: Project[]) => {
     mutate({ projects: newOrder }, false);
-    
     try {
       const res = await fetch('/api/projects/reorder', {
         method: 'PATCH',
@@ -118,9 +118,9 @@ export function ProjectProvider({ children, userRole, userId }: { children: Reac
       await mutate();
     } catch (err) {
       console.error(err);
-      await mutate(); // rollback
+      await mutate();
     }
-  };
+  }, [mutate]);
 
   useEffect(() => {
     if (selectedProjectId && data && !data.projects.find((p: Project) => p.id === selectedProjectId)) {
