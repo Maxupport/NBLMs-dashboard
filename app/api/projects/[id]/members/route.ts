@@ -26,13 +26,17 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     if (!allowed) return NextResponse.json({ error: '拒絕存取' }, { status: 403 });
 
     const db = await getDb();
+    
+    // 如果不是管理員，只能看到「已經是該頻道成員」的使用者資料
+    const sqlCondition = user.role === 'admin' ? "u.role != 'admin'" : "u.role != 'admin' AND pm.user_id IS NOT NULL";
+    
     const res = await db.execute({
       sql: `
         SELECT u.id, u.username, u.role as user_global_role, pm.role as project_role,
                CASE WHEN pm.user_id IS NOT NULL THEN 1 ELSE 0 END as is_member
         FROM users u
         LEFT JOIN project_members pm ON u.id = pm.user_id AND pm.project_id = ?
-        WHERE u.role != 'admin'
+        WHERE ${sqlCondition}
         ORDER BY u.username
       `,
       args: [params.id]

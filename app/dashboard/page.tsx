@@ -245,16 +245,14 @@ export default function DashboardPage() {
   }, [mutateLinks]);
 
   const openMembersModal = async () => {
-    const [resMembers, resUsers] = await Promise.all([
-      fetch(`/api/projects/${selectedProjectId}/members`),
-      fetch('/api/admin/users')
-    ]);
-    if (resMembers.ok && resUsers.ok) {
+    const resMembers = await fetch(`/api/projects/${selectedProjectId}/members`);
+    if (resMembers.ok) {
       const dataMembers = await resMembers.json();
-      const dataUsers = await resUsers.json();
       setProjectMembers(dataMembers.members || []);
-      setAllUsers(dataUsers.users || []);
+      setAllUsers(dataMembers.allEligibleUsers || []);
       setIsMembersModalOpen(true);
+    } else {
+      toast.error('無法取得成員資料');
     }
   };
 
@@ -728,28 +726,30 @@ export default function DashboardPage() {
                 )}
               </div>
               
-              {/* 新增成員區塊 */}
-              <div className="pt-4 border-t border-white/10 shrink-0 mb-4">
-                <label className="text-xs text-white/50 block mb-2">新增授權成員</label>
-                <div className="flex gap-2">
-                  <select 
-                    className="glass-input flex-1 text-sm py-2 px-3 appearance-none bg-black/20"
-                    onChange={(e) => {
-                      const uid = Number(e.target.value);
-                      if (uid && !projectMembers.find(m => m.id === uid)) {
-                        setProjectMembers([...projectMembers, { id: uid, role: 'viewer' }]);
-                        e.target.value = ""; // reset after selection
-                      }
-                    }}
-                    defaultValue=""
-                  >
-                    <option value="" disabled>-- 從名單中選擇要加入的使用者 --</option>
-                    {allUsers.filter(u => u.role !== 'admin' && !projectMembers.find(m => m.id === u.id)).map(u => (
-                      <option key={u.id} value={u.id} className="bg-[#1a1a1a]">{u.username}</option>
-                    ))}
-                  </select>
+              {/* 新增成員區塊 (僅限管理員) */}
+              {isAdmin && (
+                <div className="pt-4 border-t border-white/10 shrink-0 mb-4">
+                  <label className="text-xs text-white/50 block mb-2">新增授權成員 (僅管理員可用)</label>
+                  <div className="flex gap-2">
+                    <select 
+                      className="glass-input flex-1 text-sm py-2 px-3 appearance-none bg-black/20"
+                      onChange={(e) => {
+                        const uid = Number(e.target.value);
+                        if (uid && !projectMembers.find(m => m.id === uid)) {
+                          setProjectMembers([...projectMembers, { id: uid, role: 'viewer' }]);
+                          e.target.value = ""; // reset after selection
+                        }
+                      }}
+                      defaultValue=""
+                    >
+                      <option value="" disabled>-- 從名單中選擇要加入的使用者 --</option>
+                      {allUsers.filter(u => u.role !== 'admin' && !projectMembers.find(m => m.id === u.id)).map(u => (
+                        <option key={u.id} value={u.id} className="bg-[#1a1a1a]">{u.username}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex justify-end gap-2 shrink-0">
                 <button type="button" onClick={() => setIsMembersModalOpen(false)} className="px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 transition-colors">取消</button>
