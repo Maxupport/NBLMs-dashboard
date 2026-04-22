@@ -16,7 +16,8 @@ export async function GET(request: Request) {
       // Admin can see ALL projects with owner info
       const res = await db.execute(`
         SELECT p.*, 
-               CASE WHEN u.role = 'admin' THEN u.username || ' (管理員)' ELSE u.username END as owner_username 
+               CASE WHEN u.role = 'admin' THEN u.username || ' (管理員)' ELSE u.username END as owner_username,
+               'owner' as my_role
         FROM projects p
         LEFT JOIN users u ON p.owner_id = u.id
         ORDER BY p.sort_order ASC, p.created_at DESC
@@ -27,18 +28,23 @@ export async function GET(request: Request) {
       const res = await db.execute({
         sql: `
           SELECT DISTINCT p.*, 
-                 CASE WHEN u.role = 'admin' THEN u.username || ' (管理員)' ELSE u.username END as owner_username
+                 CASE WHEN u.role = 'admin' THEN u.username || ' (管理員)' ELSE u.username END as owner_username,
+                 CASE 
+                   WHEN p.owner_id = ? THEN 'owner'
+                   WHEN pm.role IS NOT NULL THEN pm.role
+                   ELSE 'viewer'
+                 END as my_role
           FROM projects p
           LEFT JOIN users u ON p.owner_id = u.id
-          LEFT JOIN project_members pm ON p.id = pm.project_id
+          LEFT JOIN project_members pm ON p.id = pm.project_id AND pm.user_id = ?
           WHERE p.owner_id = ? 
              OR pm.user_id = ? 
              OR p.is_global_welcome = 1
              OR p.parent_id IN (SELECT id FROM projects WHERE owner_id = ?)
-             OR p.parent_id IN (SELECT project_id FROM project_members WHERE user_id = ?)
+             OR p.parent_id IN (SELECT project_id FROM project_members WHERE user_id = ? AND role = 'editor')
           ORDER BY p.sort_order ASC, p.created_at DESC
         `,
-        args: [user.sub, user.sub, user.sub, user.sub]
+        args: [user.sub, user.sub, user.sub, user.sub, user.sub, user.sub]
       });
       projects = res.rows;
     }

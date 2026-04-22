@@ -60,6 +60,7 @@ async function initSchema(db: Client) {
       CREATE TABLE IF NOT EXISTS project_members (
         project_id  INTEGER NOT NULL,
         user_id     INTEGER NOT NULL,
+        role        TEXT DEFAULT 'viewer',
         PRIMARY KEY (project_id, user_id),
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -113,6 +114,10 @@ async function initSchema(db: Client) {
 
     try {
       await db.execute("ALTER TABLE projects ADD COLUMN status TEXT DEFAULT 'active'");
+    } catch (e) {}
+
+    try {
+      await db.execute("ALTER TABLE project_members ADD COLUMN role TEXT DEFAULT 'viewer'");
     } catch (e) {}
 
     try {

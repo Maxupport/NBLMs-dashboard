@@ -18,7 +18,7 @@ export default function AdminPage() {
   // Channel Members Management State
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [selectedChannelForMembers, setSelectedChannelForMembers] = useState<any>(null);
-  const [projectMembers, setProjectMembers] = useState<number[]>([]);
+  const [projectMembers, setProjectMembers] = useState<{ id: number; role: string }[]>([]);
   const [allEligibleUsers, setAllEligibleUsers] = useState<any[]>([]);
 
   const { data: usersData, mutate: mutateUsers, isLoading: loadingUsers } = useSWR('/api/admin/users', fetcher, {
@@ -112,7 +112,7 @@ export default function AdminPage() {
     const res = await fetch(`/api/projects/${channel.id}/members`);
     if (res.ok) {
       const data = await res.json();
-      setProjectMembers(data.memberIds || []);
+      setProjectMembers(data.members || []);
       setAllEligibleUsers(data.allEligibleUsers || []);
       setIsMembersModalOpen(true);
     }
@@ -123,7 +123,7 @@ export default function AdminPage() {
     const res = await fetch(`/api/projects/${selectedChannelForMembers.id}/members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memberIds: projectMembers })
+      body: JSON.stringify({ members: projectMembers })
     });
     if (res.ok) {
       setIsMembersModalOpen(false);
@@ -483,23 +483,40 @@ export default function AdminPage() {
               
               <div className="overflow-y-auto flex-1 space-y-2 mb-4">
                 {allEligibleUsers.map(u => {
-                  const isChecked = projectMembers.includes(u.id);
+                  const memberRecord = projectMembers.find(m => m.id === u.id);
+                  const isChecked = !!memberRecord;
+                  
                   return (
-                    <label key={u.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/5 transition-colors">
-                      <input 
-                        type="checkbox" 
-                        checked={isChecked} 
-                        onChange={(e) => {
-                           if (e.target.checked) setProjectMembers([...projectMembers, u.id]);
-                           else setProjectMembers(projectMembers.filter(id => id !== u.id));
-                        }}
-                        className="w-4 h-4 rounded border-white/20 bg-black/50 text-primary focus:ring-primary focus:ring-offset-background" 
-                      />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">{u.username}</span>
-                        <span className="text-[10px] text-white/30">{u.email || '無電子信箱'}</span>
+                    <div key={u.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 border border-white/5 transition-all group">
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked} 
+                          onChange={(e) => {
+                             if (e.target.checked) setProjectMembers([...projectMembers, { id: u.id, role: 'viewer' }]);
+                             else setProjectMembers(projectMembers.filter(m => m.id !== u.id));
+                          }}
+                          className="w-5 h-5 rounded border-white/20 bg-black/50 text-primary focus:ring-primary" 
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">{u.username}</span>
+                          <span className="text-[10px] text-white/30">{u.email || '無電子信箱'}</span>
+                        </div>
                       </div>
-                    </label>
+                      
+                      {isChecked && (
+                        <select 
+                          value={memberRecord.role}
+                          onChange={(e) => {
+                            setProjectMembers(projectMembers.map(m => m.id === u.id ? { ...m, role: e.target.value } : m));
+                          }}
+                          className="text-[10px] bg-white/10 border-none rounded-lg py-1 px-2 text-white/70 hover:text-white cursor-pointer transition-colors"
+                        >
+                          <option value="viewer" className="bg-[#1a1a1a]">👁️ 只能檢視</option>
+                          <option value="editor" className="bg-[#1a1a1a]">✍️ 可新增編輯</option>
+                        </select>
+                      )}
+                    </div>
                   );
                 })}
                 {allEligibleUsers.length === 0 && (

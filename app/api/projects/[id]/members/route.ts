@@ -28,17 +28,21 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const db = await getDb();
     const res = await db.execute({
       sql: `
-        SELECT u.id, u.username, u.role,
+        SELECT u.id, u.username, u.role as user_global_role, pm.role as project_role,
                CASE WHEN pm.user_id IS NOT NULL THEN 1 ELSE 0 END as is_member
         FROM users u
         LEFT JOIN project_members pm ON u.id = pm.user_id AND pm.project_id = ?
-        WHERE u.role != 'admin'  -- 管理員不能被加入成員列表（隱身保障）
+        WHERE u.role != 'admin'
         ORDER BY u.username
       `,
       args: [params.id]
     });
-    const memberIds = res.rows.filter((r: any) => r.is_member).map((r: any) => r.user_id || r.id);
-    return NextResponse.json({ memberIds, allEligibleUsers: res.rows });
+    // Return objects with id and role for existing members
+    const members = res.rows
+      .filter((r: any) => r.is_member)
+      .map((r: any) => ({ id: r.id, role: r.project_role || 'viewer' }));
+    
+    return NextResponse.json({ members, allEligibleUsers: res.rows });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: '伺服器錯誤' }, { status: 500 });
@@ -54,13 +58,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const allowed = await isOwnerOrAdmin(user.sub, user.role, params.id);
     if (!allowed) return NextResponse.json({ error: '拒絕存取' }, { status: 403 });
 
-    const { memberIds } = await request.json(); // Array of user IDs
+    const { members } = await request.json(); // Array of {id, role}
 
     // 安全防護：過濾掉任何 admin 帳號，確保管理員永遠不會被寫入 project_members
     const db = await getDb();
     const adminCheck = await db.execute(`SELECT id FROM users WHERE role = 'admin'`);
     const adminIds = new Set(adminCheck.rows.map((r: any) => r.id?.toString()));
-    const safeMemberIds = (memberIds as string[]).filter(id => !adminIds.has(id.toString()));
+    const safeMembers = (members as any[]).filter(m => !adminIds.has(m.id?.toString()));
 
     // libSQL transaction by batch
     const queries: any[] = [];
@@ -68,10 +72,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       sql: 'DELETE FROM project_members WHERE project_id = ?',
       args: [params.id]
     });
-    for (const uid of safeMemberIds) {
+    for (const m of safeMembers) {
       queries.push({
-        sql: 'INSERT INTO project_members (project_id, user_id) VALUES (?, ?)',
-        args: [params.id, uid]
+        sql: 'INSERT INTO project_members (project_id, user_id, role) VALUES (?, ?, ?)',
+        args: [params.id, m.id, m.role || 'viewer']
       });
     }
     

@@ -63,23 +63,17 @@ export default function DashboardPage() {
 
   // Manage Members Modal
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
-  const [projectMembers, setProjectMembers] = useState<number[]>([]);
+  const [projectMembers, setProjectMembers] = useState<{ id: number; role: string }[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
 
   const activeProject = projects.find(p => p.id === selectedProjectId);
   const parentProject = activeProject?.parent_id ? projects.find(p => p.id === activeProject.parent_id) : null;
   const isOwnerOrAdmin = !!(isAdmin || 
-    (activeProject && (activeProject as any).owner_id?.toString() === userId) ||
-    (parentProject && (parentProject as any).owner_id?.toString() === userId));
+    (activeProject && (activeProject as any).my_role === 'owner'));
+  
   const hasWriteAccessProjects = useMemo(() => projects.filter((p: any) => {
-    if (isAdmin) return true;
-    if (p.owner_id?.toString() === userId) return true;
-    if (p.parent_id) {
-      const parent = projects.find((parentProj: any) => parentProj.id === p.parent_id);
-      if (parent && (parent as any).owner_id?.toString() === userId) return true;
-    }
-    return false;
-  }), [projects, isAdmin, userId]);
+    return isAdmin || p.my_role === 'owner' || p.my_role === 'editor';
+  }), [projects, isAdmin]);
 
   const { data: linksData, mutate: mutateLinks, isLoading: loadingLinks } = useSWR(
     selectedProjectId ? `/api/links?projectId=${selectedProjectId}` : null,
@@ -251,7 +245,6 @@ export default function DashboardPage() {
   }, [mutateLinks]);
 
   const openMembersModal = async () => {
-    // 取得所有使用者與該專案成員
     const [resMembers, resUsers] = await Promise.all([
       fetch(`/api/projects/${selectedProjectId}/members`),
       fetch('/api/admin/users')
@@ -259,7 +252,7 @@ export default function DashboardPage() {
     if (resMembers.ok && resUsers.ok) {
       const dataMembers = await resMembers.json();
       const dataUsers = await resUsers.json();
-      setProjectMembers(dataMembers.memberIds || []);
+      setProjectMembers(dataMembers.members || []);
       setAllUsers(dataUsers.users || []);
       setIsMembersModalOpen(true);
     }
@@ -269,11 +262,12 @@ export default function DashboardPage() {
     const res = await fetch(`/api/projects/${selectedProjectId}/members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memberIds: projectMembers })
+      body: JSON.stringify({ members: projectMembers })
     });
     if (res.ok) {
       setIsMembersModalOpen(false);
       toast.success('成員權限更新成功');
+      await refreshProjects(); // 重新整理以獲取最新權限
     } else {
       const data = await res.json();
       toast.error(data.error || '更新失敗');
@@ -696,21 +690,38 @@ export default function DashboardPage() {
               
               <div className="overflow-y-auto flex-1 space-y-2 mb-4">
                 {allUsers.map(u => {
-                  if (u.role === 'admin') return null; // Admin has global access
-                  const isChecked = projectMembers.includes(u.id);
+                  if (u.role === 'admin') return null;
+                  const memberRecord = projectMembers.find(m => m.id === u.id);
+                  const isChecked = !!memberRecord;
+                  
                   return (
-                    <label key={u.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/5 transition-colors">
-                      <input 
-                        type="checkbox" 
-                        checked={isChecked} 
-                        onChange={(e) => {
-                           if (e.target.checked) setProjectMembers([...projectMembers, u.id]);
-                           else setProjectMembers(projectMembers.filter(id => id !== u.id));
-                        }}
-                        className="w-4 h-4 rounded border-white/20 bg-black/50 text-primary focus:ring-primary focus:ring-offset-background" 
-                      />
-                      <span className="text-sm font-medium">{u.username}</span>
-                    </label>
+                    <div key={u.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 border border-white/5 transition-all group">
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked} 
+                          onChange={(e) => {
+                             if (e.target.checked) setProjectMembers([...projectMembers, { id: u.id, role: 'viewer' }]);
+                             else setProjectMembers(projectMembers.filter(m => m.id !== u.id));
+                          }}
+                          className="w-5 h-5 rounded border-white/20 bg-black/50 text-primary focus:ring-primary" 
+                        />
+                        <span className="text-sm font-medium">{u.username}</span>
+                      </div>
+                      
+                      {isChecked && (
+                        <select 
+                          value={memberRecord.role}
+                          onChange={(e) => {
+                            setProjectMembers(projectMembers.map(m => m.id === u.id ? { ...m, role: e.target.value } : m));
+                          }}
+                          className="text-[10px] bg-white/10 border-none rounded-lg py-1 px-2 text-white/70 hover:text-white cursor-pointer transition-colors"
+                        >
+                          <option value="viewer" className="bg-[#1a1a1a]">👁️ 只能檢視</option>
+                          <option value="editor" className="bg-[#1a1a1a]">✍️ 可新增編輯</option>
+                        </select>
+                      )}
+                    </div>
                   );
                 })}
                 {allUsers.filter(u => u.role !== 'admin').length === 0 && (

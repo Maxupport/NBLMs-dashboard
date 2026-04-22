@@ -86,13 +86,17 @@ export async function POST(request: Request) {
           SELECT 1 FROM projects 
           WHERE (id = ? OR id = (SELECT parent_id FROM projects WHERE id = ?)) 
           AND owner_id = ?
+          UNION
+          SELECT 1 FROM project_members 
+          WHERE (project_id = ? OR project_id = (SELECT parent_id FROM projects WHERE id = ?)) 
+          AND user_id = ? AND role = 'editor'
         `,
-        args: [projectId, projectId, user.sub]
+        args: [projectId, projectId, user.sub, projectId, projectId, user.sub]
       });
       if (res.rows.length > 0) canWrite = true;
     }
 
-    if (!canWrite) return NextResponse.json({ error: '只有頻道建立者或管理員可以新增連結' }, { status: 403 });
+    if (!canWrite) return NextResponse.json({ error: '只有頻道建立者、協作者或管理員可以新增連結' }, { status: 403 });
 
     const result = await db.execute({
       sql: `INSERT INTO notebook_links (project_id, title, url, description, category) VALUES (?, ?, ?, ?, ?)`,

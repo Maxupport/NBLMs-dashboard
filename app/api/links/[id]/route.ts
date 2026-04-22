@@ -20,14 +20,19 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
           SELECT 1 FROM notebook_links nl
           JOIN projects p ON nl.project_id = p.id
           WHERE nl.id = ? 
-          AND (p.owner_id = ? OR p.parent_id IN (SELECT id FROM projects WHERE owner_id = ?))
+          AND (
+            p.owner_id = ? 
+            OR p.parent_id IN (SELECT id FROM projects WHERE owner_id = ?)
+            OR nl.project_id IN (SELECT project_id FROM project_members WHERE user_id = ? AND role = 'editor')
+            OR p.parent_id IN (SELECT project_id FROM project_members WHERE user_id = ? AND role = 'editor')
+          )
         `,
-        args: [params.id, user.sub, user.sub]
+        args: [params.id, user.sub, user.sub, user.sub, user.sub]
       });
       if (res.rows.length > 0) canDelete = true;
     }
 
-    if (!canDelete) return NextResponse.json({ error: '只有頻道建立者或管理員可以刪除連結' }, { status: 403 });
+    if (!canDelete) return NextResponse.json({ error: '只有頻道建立者、協作者或管理員可以刪除連結' }, { status: 403 });
 
     await db.execute({
       sql: 'DELETE FROM notebook_links WHERE id = ?',
@@ -62,14 +67,19 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
           SELECT 1 FROM notebook_links nl
           JOIN projects p ON nl.project_id = p.id
           WHERE nl.id = ? 
-          AND (p.owner_id = ? OR p.parent_id IN (SELECT id FROM projects WHERE owner_id = ?))
+          AND (
+            p.owner_id = ? 
+            OR p.parent_id IN (SELECT id FROM projects WHERE owner_id = ?)
+            OR nl.project_id IN (SELECT project_id FROM project_members WHERE user_id = ? AND role = 'editor')
+            OR p.parent_id IN (SELECT project_id FROM project_members WHERE user_id = ? AND role = 'editor')
+          )
         `,
-        args: [params.id, user.sub, user.sub]
+        args: [params.id, user.sub, user.sub, user.sub, user.sub]
       });
       if (res.rows.length > 0) canEdit = true;
     }
 
-    if (!canEdit) return NextResponse.json({ error: '只有頻道建立者或管理員可以編輯連結' }, { status: 403 });
+    if (!canEdit) return NextResponse.json({ error: '只有頻道建立者、協作者或管理員可以編輯連結' }, { status: 403 });
 
     await db.execute({
       sql: 'UPDATE notebook_links SET title = ?, url = ?, description = ?, category = ? WHERE id = ?',
