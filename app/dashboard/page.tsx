@@ -238,20 +238,25 @@ export default function DashboardPage() {
     mutateLinks({ links: [...(linksData?.links || [])].sort((a: any, b: any) => finalOrderedIds.indexOf(a.id) - finalOrderedIds.indexOf(b.id)) }, false);
 
     if (isOwnerOrAdmin) {
-      console.log('🔄 [Reorder] Detected as Owner/Admin: Performing global database update.');
-      try {
-        const res = await fetch('/api/links/reorder', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderedIds: finalOrderedIds, projectId: selectedProjectId })
-        });
-        if (!res.ok) throw new Error('API Reorder failed');
-        mutateLinks();
-      } catch(err) {
-         mutateLinks(); // Rollback
+      console.log('🚨 [Debug] isOwnerOrAdmin is TRUE. My Role:', (activeProject as any)?.my_role);
+      // 如果您是協作者卻看到這個彈窗，代表身分判定出錯了！
+      const confirmGlobal = window.confirm('系統判定您擁有管理權限，即將更新「全域」排序。確定要影響所有人嗎？');
+      
+      if (confirmGlobal) {
+        try {
+          const res = await fetch('/api/links/reorder', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderedIds: finalOrderedIds, projectId: selectedProjectId })
+          });
+          if (!res.ok) throw new Error('API Reorder failed');
+          mutateLinks();
+        } catch(err) {
+           mutateLinks(); // Rollback
+        }
       }
     } else {
-      console.log('💾 [Reorder] Detected as General User: Performing local storage update only.');
+      console.log('✅ [Debug] isOwnerOrAdmin is FALSE. Performing local-only update.');
       try {
         localStorage.setItem(`custom_order_${selectedProjectId}`, JSON.stringify(finalOrderedIds));
       } catch(e) {}

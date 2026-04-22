@@ -35,6 +35,8 @@ export async function PATCH(request: Request) {
       if (res.rows.length > 0) canReorder = true;
     }
 
+    console.log(`[API Reorder Log] User:${user.username}(ID:${user.sub}) attempting reorder for Project:${projectId}. Allowed:${canReorder}`);
+
     if (!canReorder) return NextResponse.json({ error: '拒絕存取，只有管理員或建立者可以重新排序' }, { status: 403 });
 
     // Update sort_order based on array index
