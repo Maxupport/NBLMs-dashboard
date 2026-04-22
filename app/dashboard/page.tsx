@@ -643,7 +643,7 @@ export default function DashboardPage() {
                   <div className="flex gap-4 p-2 bg-black/20 rounded-lg border border-white/5">
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <input type="radio" checked={editLinkData.category === 'ai_tool'} onChange={() => setEditLinkData({...editLinkData, category: 'ai_tool'})} className="accent-primary" />
-                      <span className="text-xs text-white/60 group-hover:text-white transition-colors">常用 AI 工具</span>
+                      <span className="text-xs text-white/60 group-hover:text-white transition-colors">常用 AI 工具 & 專案追蹤管理</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <input type="radio" checked={editLinkData.category === 'other'} onChange={() => setEditLinkData({...editLinkData, category: 'other'})} className="accent-primary" />
@@ -683,7 +683,7 @@ export default function DashboardPage() {
                   <div className="flex gap-4 p-2 bg-black/20 rounded-lg border border-white/5">
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <input type="radio" checked={newLink.category === 'ai_tool'} onChange={() => setNewLink({...newLink, category: 'ai_tool'})} className="accent-primary" />
-                      <span className="text-xs text-white/60 group-hover:text-white transition-colors">常用 AI 工具</span>
+                      <span className="text-xs text-white/60 group-hover:text-white transition-colors">常用 AI 工具 & 專案追蹤管理</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <input type="radio" checked={newLink.category === 'other'} onChange={() => setNewLink({...newLink, category: 'other'})} className="accent-primary" />
