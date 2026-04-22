@@ -45,6 +45,24 @@ export default function DashboardPage() {
     return () => window.removeEventListener('open-new-project-modal', handleOpenModal);
   }, []);
 
+  const [copyLinkModalState, setCopyLinkModalState] = useState<{ isOpen: boolean; link: any | null }>({ isOpen: false, link: null });
+  const [copyTargetProjectId, setCopyTargetProjectId] = useState<number | ''>('');
+
+  // Manage Members Modal
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [projectMembers, setProjectMembers] = useState<{ id: number; role: string }[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+
+  const activeProject = projects.find(p => p.id === selectedProjectId);
+  const parentProject = activeProject?.parent_id ? projects.find(p => p.id === activeProject.parent_id) : null;
+  const isOwnerOrAdmin = !!(isAdmin || (activeProject && (activeProject as any).my_role === 'owner'));
+  
+  useEffect(() => {
+    if (activeProject) {
+      console.log(`👤 [Identity Report] Project: ${activeProject.name}, My Role: ${(activeProject as any).my_role}, isOwnerOrAdmin: ${isOwnerOrAdmin}`);
+    }
+  }, [activeProject, isOwnerOrAdmin]);
+
   useEffect(() => {
     // 如果首頁進來沒有選中專案，自動尋找特殊的「全域歡迎區」
     // 為了避免與「新增專案」按鈕衝突，我們只在初次載入（或專案列表載入）時執行一次
@@ -58,18 +76,6 @@ export default function DashboardPage() {
       }
     }
   }, [projects, selectedProjectId, setSelectedProjectId]);
-  const [copyLinkModalState, setCopyLinkModalState] = useState<{ isOpen: boolean; link: any | null }>({ isOpen: false, link: null });
-  const [copyTargetProjectId, setCopyTargetProjectId] = useState<number | ''>('');
-
-  // Manage Members Modal
-  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
-  const [projectMembers, setProjectMembers] = useState<{ id: number; role: string }[]>([]);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-
-  const activeProject = projects.find(p => p.id === selectedProjectId);
-  const parentProject = activeProject?.parent_id ? projects.find(p => p.id === activeProject.parent_id) : null;
-  const isOwnerOrAdmin = !!(isAdmin || (activeProject && (activeProject as any).my_role === 'owner'));
-  
   const hasWriteAccessProjects = useMemo(() => projects.filter((p: any) => {
     return isAdmin || p.my_role === 'owner' || p.my_role === 'editor';
   }), [projects, isAdmin]);
@@ -81,24 +87,44 @@ export default function DashboardPage() {
   );
   const rawLinks: any[] = useMemo(() => {
     let arr = [...(linksData?.links || [])];
-    if (selectedProjectId && typeof window !== 'undefined' && activeProject?.my_role !== 'owner' && activeProject?.my_role !== 'admin') {
+    const role = (activeProject as any)?.my_role;
+    
+    // Apply local storage overrides for non-owners/admins
+    if (selectedProjectId && typeof window !== 'undefined' && role !== 'owner' && role !== 'admin') {
       try {
-        const localOrderStr = localStorage.getItem(`custom_order_${selectedProjectId}`);
-        if (localOrderStr) {
-          const localOrderIds = JSON.parse(localOrderStr);
-          arr.sort((a, b) => {
-            const indexA = localOrderIds.indexOf(a.id);
-            const indexB = localOrderIds.indexOf(b.id);
-            if (indexA === -1 && indexB === -1) return 0;
-            if (indexA === -1) return 1;
-            if (indexB === -1) return -1;
-            return indexA - indexB;
-          });
+        const localLayoutStr = localStorage.getItem(`custom_layout_${selectedProjectId}`);
+        if (localLayoutStr) {
+          console.log(`📦 [Local Layout Active] Project ID: ${selectedProjectId}. Applying LocalStorage layout.`);
+          const { order, categories } = JSON.parse(localLayoutStr);
+          
+          // 1. Apply category overrides
+          if (categories) {
+            arr = arr.map(l => ({
+              ...l,
+              category: categories[l.id] || l.category
+            }));
+          }
+          
+          // 2. Apply order overrides
+          if (order) {
+            arr.sort((a, b) => {
+              const indexA = order.indexOf(a.id);
+              const indexB = order.indexOf(b.id);
+              if (indexA === -1 && indexB === -1) return 0;
+              if (indexA === -1) return 1;
+              if (indexB === -1) return -1;
+              return indexA - indexB;
+            });
+          }
         }
-      } catch(e) {}
+      } catch(e) {
+        console.error('Local layout error:', e);
+      }
+    } else if (role === 'owner' || role === 'admin') {
+       console.log(`🌐 [Global Sort Active] Role is ${role}. Using database order.`);
     }
     return arr;
-  }, [linksData, selectedProjectId, activeProject?.my_role]);
+  }, [linksData, selectedProjectId, activeProject]);
   const links = useMemo(() => rawLinks.filter((l: any) => 
     !searchQuery ||
     l.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -219,31 +245,45 @@ export default function DashboardPage() {
     }
   };
 
-  const handleLinkDrop = async (sourceArray: any[], dropId: number, type: string) => {
-    if (!draggedLinkId || draggedLinkId === dropId || draggedLinkType !== type) return;
+  const handleLinkDrop = async (dropId: number, targetCategory: string) => {
+    if (!draggedLinkId || draggedLinkId === dropId) return;
     
-    const oldIndex = sourceArray.findIndex(l => l.id === draggedLinkId);
-    const newIndex = sourceArray.findIndex(l => l.id === dropId);
-    
-    if (oldIndex === -1 || newIndex === -1) return;
-    
-    const newArray = [...sourceArray];
-    const [movedItem] = newArray.splice(oldIndex, 1);
-    newArray.splice(newIndex, 0, movedItem);
+    // We work with the already processed rawLinks (which might have local overrides)
+    const currentLinks = [...rawLinks];
+    const draggedLink = currentLinks.find(l => l.id === draggedLinkId);
+    if (!draggedLink) return;
 
-    const allOtherLinks = links.filter((l: any) => !sourceArray.find(sl => sl.id === l.id));
-    const finalOrderedIds = [...newArray.map((l: any) => l.id), ...allOtherLinks.map((l: any) => l.id)];
+    // Remove from old position
+    const filteredLinks = currentLinks.filter(l => l.id !== draggedLinkId);
+    // Find new position
+    const targetIndex = filteredLinks.findIndex(l => l.id === dropId);
+    
+    if (targetIndex === -1) return;
+    
+    // Update category for the moved item
+    const updatedMovedItem = { ...draggedLink, category: targetCategory };
+    filteredLinks.splice(targetIndex, 0, updatedMovedItem);
+
+    const finalOrderedIds = filteredLinks.map((l: any) => l.id);
     
     // Optimistic update
-    mutateLinks({ links: [...(linksData?.links || [])].sort((a: any, b: any) => finalOrderedIds.indexOf(a.id) - finalOrderedIds.indexOf(b.id)) }, false);
+    mutateLinks({ links: filteredLinks }, false);
 
     if (isOwnerOrAdmin) {
-      console.log('🚨 [Debug] isOwnerOrAdmin is TRUE. My Role:', (activeProject as any)?.my_role);
-      // 如果您是協作者卻看到這個彈窗，代表身分判定出錯了！
-      const confirmGlobal = window.confirm('系統判定您擁有管理權限，即將更新「全域」排序。確定要影響所有人嗎？');
+      console.log('🚨 [Debug] isOwnerOrAdmin is TRUE. Performing global database update.');
+      const confirmGlobal = window.confirm('系統判定您擁有管理權限，即將更新「全域」排序與分區。確定要影響所有人嗎？');
       
       if (confirmGlobal) {
         try {
+          // Update category first if changed
+          if (draggedLink.category !== targetCategory) {
+             await fetch(`/api/links/${draggedLinkId}`, {
+               method: 'PATCH',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ title: draggedLink.title, url: draggedLink.url, category: targetCategory })
+             });
+          }
+          // Then reorder
           const res = await fetch('/api/links/reorder', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -256,10 +296,18 @@ export default function DashboardPage() {
         }
       }
     } else {
-      console.log('✅ [Debug] isOwnerOrAdmin is FALSE. Performing local-only update.');
+      console.log('✅ [Debug] isOwnerOrAdmin is FALSE. Performing local-only layout update.');
       try {
-        localStorage.setItem(`custom_order_${selectedProjectId}`, JSON.stringify(finalOrderedIds));
-      } catch(e) {}
+        const existingLayoutStr = localStorage.getItem(`custom_layout_${selectedProjectId}`);
+        const layout = existingLayoutStr ? JSON.parse(existingLayoutStr) : { order: [], categories: {} };
+        
+        layout.order = finalOrderedIds;
+        layout.categories[draggedLinkId] = targetCategory;
+        
+        localStorage.setItem(`custom_layout_${selectedProjectId}`, JSON.stringify(layout));
+      } catch(e) {
+        console.error('Save local layout error:', e);
+      }
     }
     
     setDraggedLinkId(null);
@@ -335,16 +383,14 @@ export default function DashboardPage() {
                 setDraggedLinkType(null);
               }}
               onDragOver={(e) => {
-                if (draggedLinkType === type && draggedLinkId !== link.id) {
+                if (draggedLinkId !== link.id) {
                   e.preventDefault();
                   e.dataTransfer.dropEffect = 'move';
                 }
               }}
               onDrop={(e) => {
                 e.preventDefault();
-                if (draggedLinkType === type) {
-                  handleLinkDrop(linkArray, link.id, type);
-                }
+                handleLinkDrop(link.id, type);
               }}
               onClick={(e) => {
                 if (isInternal && targetChannelId) {
