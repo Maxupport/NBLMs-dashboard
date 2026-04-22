@@ -31,7 +31,15 @@ export default function AdminPage() {
   const { data: settingsData, mutate: mutateSettings } = useSWR('/api/admin/settings', fetcher);
   const { data: channelsData, mutate: mutateChannels, isLoading: loadingChannels } = useSWR('/api/admin/channels', fetcher);
 
-  const users = usersData?.users || [];
+  const usersRaw = usersData?.users || [];
+  // Sort users: Normal members first, Admins/Ghost at the bottom
+  const users = [...usersRaw].sort((a, b) => {
+    const isSpecialA = a.role === 'admin' || a.username === 'Ghost';
+    const isSpecialB = b.role === 'admin' || b.username === 'Ghost';
+    if (isSpecialA && !isSpecialB) return 1;
+    if (!isSpecialA && isSpecialB) return -1;
+    return 0;
+  });
   const applications = appsData?.applications || [];
   const channels = channelsData?.channels || [];
   const loading = loadingUsers || loadingApps || loadingChannels;
@@ -252,7 +260,7 @@ export default function AdminPage() {
                       {u.last_login_at ? new Date(u.last_login_at + 'Z').toLocaleString('zh-TW', { hour12: false }) : '從未登入'}
                     </td>
                     <td className="p-4">
-                      {u.role !== 'admin' && (
+                      {u.role !== 'admin' && u.username !== 'Ghost' && (
                         <div className="flex gap-2 whitespace-nowrap">
                           <button 
                             onClick={async () => {
