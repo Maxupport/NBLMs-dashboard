@@ -68,8 +68,7 @@ export default function DashboardPage() {
 
   const activeProject = projects.find(p => p.id === selectedProjectId);
   const parentProject = activeProject?.parent_id ? projects.find(p => p.id === activeProject.parent_id) : null;
-  const isOwnerOrAdmin = !!(isAdmin || 
-    (activeProject && (activeProject as any).my_role === 'owner'));
+  const isOwnerOrAdmin = !!(isAdmin || (activeProject && (activeProject as any).my_role === 'owner'));
   
   const hasWriteAccessProjects = useMemo(() => projects.filter((p: any) => {
     return isAdmin || p.my_role === 'owner' || p.my_role === 'editor';
@@ -239,6 +238,7 @@ export default function DashboardPage() {
     mutateLinks({ links: [...(linksData?.links || [])].sort((a: any, b: any) => finalOrderedIds.indexOf(a.id) - finalOrderedIds.indexOf(b.id)) }, false);
 
     if (isOwnerOrAdmin) {
+      console.log('🔄 [Reorder] Detected as Owner/Admin: Performing global database update.');
       try {
         const res = await fetch('/api/links/reorder', {
           method: 'PATCH',
@@ -251,6 +251,7 @@ export default function DashboardPage() {
          mutateLinks(); // Rollback
       }
     } else {
+      console.log('💾 [Reorder] Detected as General User: Performing local storage update only.');
       try {
         localStorage.setItem(`custom_order_${selectedProjectId}`, JSON.stringify(finalOrderedIds));
       } catch(e) {}
