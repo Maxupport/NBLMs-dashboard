@@ -59,7 +59,7 @@ export default function FeedbackPage() {
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in py-6 p-4">
       <div className="flex items-center justify-between pb-4 border-b border-border">
         <div>
-          <h2 className="text-2xl font-semibold flex items-center gap-2">💬 公共留言板</h2>
+          <h2 className="text-2xl font-semibold flex items-center gap-2">💬 使用者回饋 (互動留言板)</h2>
           <p className="text-white/50 text-sm mt-1">您可以在這裡留下建議、回報問題，或是與其他夥伴交流</p>
         </div>
       </div>

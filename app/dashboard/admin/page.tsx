@@ -157,7 +157,7 @@ export default function AdminPage() {
         </div>
         <div className="flex gap-4 items-center">
            <div className="flex flex-col items-end">
-              <span className="text-xs text-white/50 mb-1">公共留言板開放狀態</span>
+              <span className="text-xs text-white/50 mb-1">使用者回饋 (互動留言板) 開放狀態</span>
               <button 
                 onClick={toggleFeedbackBoard} 
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${fbOpen ? 'bg-green-500' : 'bg-white/20'}`}
