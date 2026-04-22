@@ -7,11 +7,13 @@ async function isOwnerOrAdmin(userId: string, role: string, projectId: string): 
   if (role === 'admin') return true;
   const db = await getDb();
   const res = await db.execute({
-    sql: 'SELECT owner_id FROM projects WHERE id = ?',
-    args: [projectId]
+    sql: `
+      SELECT 1 FROM projects 
+      WHERE id = ? AND (owner_id = ? OR parent_id IN (SELECT id FROM projects WHERE owner_id = ?))
+    `,
+    args: [projectId, userId, userId]
   });
-  if (res.rows.length === 0) return false;
-  return (res.rows[0] as any).owner_id?.toString() === userId;
+  return res.rows.length > 0;
 }
 
 export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -46,7 +48,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     if (!allowed) return NextResponse.json({ error: '拒絕存取：只有專案建立者或管理員可修改' }, { status: 403 });
 
     const body = await request.json();
-    const { name, description } = body;
+    const { name, description, parent_id } = body;
 
     if (!name?.trim()) {
       return NextResponse.json({ error: '專案名稱不得為空' }, { status: 400 });
@@ -54,8 +56,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
     const db = await getDb();
     await db.execute({
-      sql: 'UPDATE projects SET name = ?, description = ? WHERE id = ?',
-      args: [name.trim(), description || '', params.id]
+      sql: 'UPDATE projects SET name = ?, description = ?, parent_id = ? WHERE id = ?',
+      args: [name.trim(), description || '', parent_id !== undefined ? parent_id : null, params.id]
     });
 
     return NextResponse.json({ success: true });

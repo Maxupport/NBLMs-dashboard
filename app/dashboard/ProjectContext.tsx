@@ -16,6 +16,7 @@ type Project = {
   owner_username?: string;
   status?: string;
   is_global_welcome?: number;
+  parent_id?: number | null;
 };
 
 type ProjectContextType = {

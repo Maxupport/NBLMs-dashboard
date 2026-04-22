@@ -18,16 +18,16 @@ function Sidebar({ width }: { width: number }) {
     return new Set();
   });
   const [showAllAdmin, setShowAllAdmin] = useState(false);
+  const [collapsedParents, setCollapsedParents] = useState<Set<number>>(new Set());
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
 
-  const isCollapsed = width <= 100; // Use a threshold for visual transition
+  const isCollapsed = width <= 100;
 
-  const toggleHideProject = (id: number) => {
-    setHiddenProjects(prev => {
+  const toggleParentCollapse = (id: number) => {
+    setCollapsedParents(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
-      localStorage.setItem('admin_hidden_projects', JSON.stringify([...next]));
       return next;
     });
   };
@@ -39,42 +39,121 @@ function Sidebar({ width }: { width: number }) {
   const specialProject = visibleProjects.find(p => p.is_global_welcome === 1);
   const normalProjects = visibleProjects.filter(p => p.id !== specialProject?.id);
 
-  const hiddenCount = hiddenProjects.size;
+  // Grouping logic: Identify projects that should be top-level in the current view
+  const accessibleProjectIds = new Set(normalProjects.map(p => p.id));
+  
+  const parentProjects = normalProjects.filter(p => {
+    // If it has no parent, it's top-level
+    if (!p.parent_id) return true;
+    // If it has a parent but the parent isn't in the view, it's top-level for this user
+    if (!accessibleProjectIds.has(p.parent_id)) return true;
+    return false;
+  });
 
-  // Drag & Drop handlers
-  const handleDragStart = (e: React.DragEvent, id: number) => {
-    if (sortMethod !== 'manual') return;
-    setDraggedId(id);
-    e.dataTransfer.setData('text/plain', id.toString());
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: React.DragEvent, id: number) => {
-    if (sortMethod !== 'manual') return;
-    e.preventDefault();
-    if (id !== draggedId) setDragOverId(id);
-  };
-
-  const handleDrop = (e: React.DragEvent, targetId: number) => {
-    if (sortMethod !== 'manual') return;
-    e.preventDefault();
-    const sourceId = Number(e.dataTransfer.getData('text/plain'));
-    if (sourceId === targetId) {
-      setDraggedId(null);
-      setDragOverId(null);
-      return;
+  const childProjectsMap = normalProjects.reduce((acc, p) => {
+    if (p.parent_id && accessibleProjectIds.has(p.parent_id)) {
+      if (!acc[p.parent_id]) acc[p.parent_id] = [];
+      acc[p.parent_id].push(p);
     }
+    return acc;
+  }, {} as Record<number, any[]>);
 
-    const newProjects = [...projects];
-    const sourceIndex = newProjects.findIndex(p => p.id === sourceId);
-    const targetIndex = newProjects.findIndex(p => p.id === targetId);
-    
-    const [movedProject] = newProjects.splice(sourceIndex, 1);
-    newProjects.splice(targetIndex, 0, movedProject);
-    
-    reorderProjects(newProjects);
-    setDraggedId(null);
-    setDragOverId(null);
+  const renderProjectItem = (p: any, isChild = false) => {
+    const hasChildren = childProjectsMap[p.id] && childProjectsMap[p.id].length > 0;
+    const isParentCollapsed = collapsedParents.has(p.id);
+
+    return (
+      <div key={p.id} className="space-y-0.5">
+        <div 
+          className={`group relative transition-all duration-300 ${draggedId === p.id ? 'opacity-30' : ''} ${dragOverId === p.id ? 'pt-8' : ''} ${isChild && !isCollapsed ? 'ml-4' : ''}`}
+          draggable={sortMethod === 'manual'}
+          onDragStart={(e) => handleDragStart(e, p.id)}
+          onDragOver={(e) => handleDragOver(e, p.id)}
+          onDrop={(e) => handleDrop(e, p.id)}
+          onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+        >
+          {dragOverId === p.id && (
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50 animate-pulse pointer-events-none" />
+          )}
+          
+          <div className="flex items-center gap-1">
+            {/* Collapse Toggle for Parents */}
+            {!isCollapsed && !isChild && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); toggleParentCollapse(p.id); }}
+                className={`w-4 h-4 flex items-center justify-center text-[10px] text-white/20 hover:text-white/60 transition-all ${hasChildren ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+              >
+                <span className={`transition-transform duration-200 ${isParentCollapsed ? '-rotate-90' : ''}`}>▼</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                if (p.status !== 'disabled') {
+                  setSelectedProjectId(p.id);
+                  if (pathname !== '/dashboard') {
+                    router.push(`/dashboard?channel=${p.id}`);
+                  }
+                }
+              }}
+              disabled={p.status === 'disabled'}
+              title={isCollapsed ? p.name : ""}
+              className={`flex-1 text-left transition-all text-sm flex items-center relative interactive-card ${isCollapsed ? 'justify-center p-2 rounded-xl' : 'px-3 py-1.5 rounded-lg gap-2 pr-8'} ${
+                p.status === 'disabled' ? 'opacity-60 cursor-not-allowed bg-red-900/10 text-white/40 border border-red-500/10' :
+                selectedProjectId === p.id ? 'bg-white/10 text-white border border-white/20 shadow-lg' : 'text-white/50 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              {!isCollapsed && (
+                <div className={`absolute -left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-[1px] bg-white/10 group-hover:bg-white/30 transition-colors ${isChild ? 'w-2.5' : ''}`} />
+              )}
+              
+              <span className={`shrink-0 ${p.status === 'disabled' ? 'opacity-50 grayscale' : ''}`}>{p.icon}</span> 
+              {!isCollapsed && <span className={`truncate text-[13px] ${p.status === 'disabled' ? 'line-through' : ''} ${selectedProjectId === p.id ? 'font-medium' : ''}`}>{p.name}</span>}
+              
+              {!isCollapsed && sortMethod === 'manual' && (
+                <span className="opacity-0 group-hover:opacity-40 text-[10px] ml-auto font-mono pointer-events-none">⠿</span>
+              )}
+            </button>
+
+            {/* Quick Add Sub-channel for Parents */}
+            {!isCollapsed && !isChild && userRole === 'admin' && (
+              <button
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  // Use a Custom Event to trigger the New Project Modal with parent_id
+                  window.dispatchEvent(new CustomEvent('open-new-project-modal', { detail: { parent_id: p.id, parent_name: p.name } }));
+                }}
+                className="p-1 opacity-0 group-hover:opacity-100 text-white/30 hover:text-primary transition-all rounded-md hover:bg-primary/10"
+                title="新增子頻道"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              </button>
+            )}
+
+            {userRole === 'admin' && !isCollapsed && (
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleHideProject(p.id); }}
+                className="p-1.5 opacity-0 group-hover:opacity-100 text-white/30 hover:text-white/70 transition-all rounded-md hover:bg-white/10"
+                title={hiddenProjects.has(p.id) ? '顯示此專案' : '隱藏'}
+              >
+                {hiddenProjects.has(p.id) ? (
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                ) : (
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Children Rendering */}
+        {!isCollapsed && hasChildren && !isParentCollapsed && (
+          <div className="ml-2 pl-2 border-l border-white/5 space-y-0.5 animate-in slide-in-from-top-1 duration-200">
+            {childProjectsMap[p.id].map(child => renderProjectItem(child, true))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -83,8 +162,7 @@ function Sidebar({ width }: { width: number }) {
         {!isCollapsed && (
           <div className="flex items-center justify-between mb-3 px-1 animate-in fade-in duration-300">
             <div className="flex items-center gap-2">
-              <div className="text-[10px] uppercase tracking-widest font-bold text-white/30">Projects</div>
-              {/* Sort Dropdown */}
+              <div className="text-[10px] uppercase tracking-widest font-bold text-white/30">Channels</div>
               <div className="relative group/sort">
                 <button className="text-[10px] text-white/20 hover:text-white/60 transition-colors flex items-center gap-0.5">
                   {sortMethod === 'manual' ? '⇅ 自定義' : sortMethod === 'name' ? '🔤 名稱' : '👤 建立者'}
@@ -117,78 +195,22 @@ function Sidebar({ width }: { width: number }) {
           onClick={() => {
              setSelectedProjectId(null);
              router.push('/dashboard');
+             // Trigger event to open modal
+             window.dispatchEvent(new CustomEvent('open-new-project-modal', { detail: { parent_id: null } }));
           }}
-          title={isCollapsed ? "新增專案 Channel" : ""}
-          className={`w-full transition-all flex items-center mb-2 border interactive-card ${isCollapsed ? 'justify-center py-3 rounded-2xl' : 'px-4 py-2.5 rounded-xl gap-3'} ${
+          title={isCollapsed ? "新增頂層 Channel" : ""}
+          className={`w-full transition-all flex items-center mb-4 border interactive-card ${isCollapsed ? 'justify-center py-3 rounded-2xl' : 'px-4 py-2.5 rounded-xl gap-3'} ${
             selectedProjectId === null && !pathname?.includes('/feedback') 
               ? 'bg-primary/10 text-primary-foreground border-primary/30 shadow-[0_0_15px_rgba(255,255,255,0.05)] font-semibold' 
               : 'border-white/5 bg-white/[0.02] text-white/70 hover:bg-white/10 hover:border-white/10 hover:text-white font-medium'
           }`}
         >
           <span className="text-lg opacity-90 shrink-0">🏠</span> 
-          {!isCollapsed && <span className="truncate">新增專案 Channel</span>}
+          {!isCollapsed && <span className="truncate">新增頂層 Channel</span>}
         </button>
 
-      <div className={`${isCollapsed ? 'space-y-2' : 'ml-5 pl-2 border-l border-white/10 space-y-1 py-1'}`}>
-        {normalProjects.map(p => (
-          <div 
-            key={p.id} 
-            className={`group relative transition-all duration-300 ${draggedId === p.id ? 'opacity-30' : ''} ${dragOverId === p.id ? 'pt-8' : ''}`}
-            draggable={sortMethod === 'manual'}
-            onDragStart={(e) => handleDragStart(e, p.id)}
-            onDragOver={(e) => handleDragOver(e, p.id)}
-            onDrop={(e) => handleDrop(e, p.id)}
-            onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
-          >
-            {dragOverId === p.id && (
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/50 animate-pulse pointer-events-none" />
-            )}
-            <button
-              onClick={() => {
-                if (p.status !== 'disabled') {
-                  setSelectedProjectId(p.id);
-                  if (pathname !== '/dashboard') {
-                    router.push(`/dashboard?channel=${p.id}`);
-                  }
-                }
-              }}
-              disabled={p.status === 'disabled'}
-              title={isCollapsed ? p.name : ""}
-              className={`w-full text-left transition-all text-sm flex items-center relative interactive-card ${isCollapsed ? 'justify-center p-2 rounded-xl' : 'px-3 py-2 rounded-lg gap-2 pr-8'} ${
-                p.status === 'disabled' ? 'opacity-60 cursor-not-allowed bg-red-900/10 text-white/40 border border-red-500/10' :
-                selectedProjectId === p.id ? 'bg-white/10 text-white border border-white/20 shadow-lg' : 'text-white/50 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              {/* horizontal indicator line */}
-              {!isCollapsed && (
-                <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-2 h-[1px] bg-white/10 group-hover:bg-white/30 transition-colors" />
-              )}
-              
-              <span className={`shrink-0 ${p.status === 'disabled' ? 'opacity-50 grayscale' : ''}`}>{p.icon}</span> 
-              {!isCollapsed && <span className={`truncate ${p.status === 'disabled' ? 'line-through' : ''} ${selectedProjectId === p.id ? 'font-medium' : ''}`}>{p.name}</span>}
-              
-              {!isCollapsed && sortMethod === 'manual' && (
-                <span className="opacity-0 group-hover:opacity-40 text-[10px] ml-auto font-mono pointer-events-none">⠿</span>
-              )}
-              {!isCollapsed && p.status === 'disabled' && (
-                <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded ml-auto shrink-0 whitespace-nowrap">🚫</span>
-              )}
-            </button>
-            {userRole === 'admin' && !isCollapsed && (
-              <button
-                onClick={(e) => { e.stopPropagation(); toggleHideProject(p.id); }}
-                className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 opacity-0 group-hover:opacity-100 text-white/30 hover:text-white/70 transition-all rounded-md hover:bg-white/10"
-                title={hiddenProjects.has(p.id) ? '顯示此專案' : '從我的視圖中隱藏'}
-              >
-                {hiddenProjects.has(p.id) ? (
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                ) : (
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
-                )}
-              </button>
-            )}
-          </div>
-        ))}
+      <div className={`${isCollapsed ? 'space-y-2' : 'space-y-1'}`}>
+        {parentProjects.map(p => renderProjectItem(p))}
       </div>
       
       {normalProjects.length === 0 && !isCollapsed && (

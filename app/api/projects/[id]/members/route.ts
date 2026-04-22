@@ -7,11 +7,13 @@ async function isOwnerOrAdmin(userId: string, role: string, projectId: string): 
   if (role === 'admin') return true;
   const db = await getDb();
   const res = await db.execute({
-    sql: 'SELECT owner_id FROM projects WHERE id = ?',
-    args: [projectId]
+    sql: `
+      SELECT 1 FROM projects 
+      WHERE id = ? AND (owner_id = ? OR parent_id IN (SELECT id FROM projects WHERE owner_id = ?))
+    `,
+    args: [projectId, userId, userId]
   });
-  if (res.rows.length === 0) return false;
-  return (res.rows[0] as any).owner_id?.toString() === userId;
+  return res.rows.length > 0;
 }
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {

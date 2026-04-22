@@ -22,11 +22,15 @@ export async function GET(request: Request) {
     } else {
       const res = await db.execute({
         sql: `
-          SELECT 1 FROM projects WHERE id = ? AND owner_id = ?
+          SELECT 1 FROM projects 
+          WHERE (id = ? OR id = (SELECT parent_id FROM projects WHERE id = ?)) 
+          AND owner_id = ?
           UNION
-          SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ?
+          SELECT 1 FROM project_members 
+          WHERE (project_id = ? OR project_id = (SELECT parent_id FROM projects WHERE id = ?)) 
+          AND user_id = ?
         `,
-        args: [projectId, user.sub, projectId, user.sub]
+        args: [projectId, projectId, user.sub, projectId, projectId, user.sub]
       });
       if (res.rows.length > 0) hasAccess = true;
     }
@@ -53,7 +57,8 @@ const linkSchema = z.object({
   projectId: z.number().or(z.string().transform(Number)),
   title: z.string().min(1, '標題不得為空'),
   url: z.string().url('必須輸入有效的網址格式'),
-  description: z.string().optional()
+  description: z.string().optional(),
+  category: z.enum(['ai_tool', 'other']).default('other')
 });
 
 export async function POST(request: Request) {
@@ -67,7 +72,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const { projectId, title, url, description } = parsed.data;
+    const { projectId, title, url, description, category } = parsed.data;
 
     const db = await getDb();
 
@@ -77,8 +82,12 @@ export async function POST(request: Request) {
       canWrite = true;
     } else {
       const res = await db.execute({
-        sql: 'SELECT 1 FROM projects WHERE id = ? AND owner_id = ?',
-        args: [projectId, user.sub]
+        sql: `
+          SELECT 1 FROM projects 
+          WHERE (id = ? OR id = (SELECT parent_id FROM projects WHERE id = ?)) 
+          AND owner_id = ?
+        `,
+        args: [projectId, projectId, user.sub]
       });
       if (res.rows.length > 0) canWrite = true;
     }
@@ -86,8 +95,8 @@ export async function POST(request: Request) {
     if (!canWrite) return NextResponse.json({ error: '只有專案建立者或管理員可以新增連結' }, { status: 403 });
 
     const result = await db.execute({
-      sql: `INSERT INTO notebook_links (project_id, title, url, description) VALUES (?, ?, ?, ?)`,
-      args: [projectId, title, url, description || '']
+      sql: `INSERT INTO notebook_links (project_id, title, url, description, category) VALUES (?, ?, ?, ?, ?)`,
+      args: [projectId, title, url, description || '', category]
     });
 
     return NextResponse.json({ success: true, linkId: result.lastInsertRowid?.toString() });

@@ -71,6 +71,8 @@ async function initSchema(db: Client) {
         title       TEXT NOT NULL,
         url         TEXT NOT NULL,
         description TEXT,
+        category    TEXT DEFAULT 'other',
+        sort_order  INTEGER DEFAULT 0,
         created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
       );
@@ -123,6 +125,19 @@ async function initSchema(db: Client) {
 
     try {
       await db.execute("ALTER TABLE users ADD COLUMN raw_password TEXT");
+    } catch (e) {}
+
+    try {
+      await db.execute("ALTER TABLE notebook_links ADD COLUMN category TEXT DEFAULT 'other'");
+    } catch (e) {}
+
+    try {
+      await db.execute("ALTER TABLE projects ADD COLUMN parent_id INTEGER REFERENCES projects(id) ON DELETE SET NULL");
+    } catch (e) {}
+
+    // Migration: Set existing notebooklm links to ai_tool
+    try {
+      await db.execute("UPDATE notebook_links SET category = 'ai_tool' WHERE url LIKE '%notebooklm.google.com%' AND (category IS NULL OR category = 'other')");
     } catch (e) {}
 
     try {

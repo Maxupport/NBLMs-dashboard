@@ -15,18 +15,18 @@ export default function DashboardPage() {
   
   // Modals Data
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
-  const [newProject, setNewProject] = useState({ name: '', description: '' });
+  const [newProject, setNewProject] = useState({ name: '', description: '', parent_id: null as number | null });
 
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
-  const [editProjectData, setEditProjectData] = useState({ name: '', description: '' });
+  const [editProjectData, setEditProjectData] = useState({ name: '', description: '', parent_id: null as number | null });
 
   // Add Link Modal
   const [isNewLinkModalOpen, setIsNewLinkModalOpen] = useState(false);
-  const [newLink, setNewLink] = useState({ title: '', url: '', description: '' });
+  const [newLink, setNewLink] = useState({ title: '', url: '', description: '', category: 'ai_tool' });
 
   // Edit Link Modal
   const [isEditLinkModalOpen, setIsEditLinkModalOpen] = useState(false);
-  const [editLinkData, setEditLinkData] = useState({ id: 0, title: '', url: '', description: '' });
+  const [editLinkData, setEditLinkData] = useState({ id: 0, title: '', url: '', description: '', category: 'other' });
 
   // Drag and Drop State for Links
   const [draggedLinkId, setDraggedLinkId] = useState<number | null>(null);
@@ -34,6 +34,16 @@ export default function DashboardPage() {
 
   // Search Filter
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const handleOpenModal = (e: any) => {
+      const { parent_id } = e.detail;
+      setNewProject({ name: '', description: '', parent_id: parent_id || null });
+      setIsNewProjectModalOpen(true);
+    };
+    window.addEventListener('open-new-project-modal', handleOpenModal);
+    return () => window.removeEventListener('open-new-project-modal', handleOpenModal);
+  }, []);
 
   useEffect(() => {
     // 如果首頁進來沒有選中專案，自動尋找特殊的「全域歡迎區」
@@ -57,8 +67,19 @@ export default function DashboardPage() {
   const [allUsers, setAllUsers] = useState<any[]>([]);
 
   const activeProject = projects.find(p => p.id === selectedProjectId);
-  const isOwnerOrAdmin = isAdmin || (activeProject && (activeProject as any).owner_id?.toString() === userId);
-  const hasWriteAccessProjects = projects.filter((p: any) => isAdmin || p.owner_id?.toString() === userId);
+  const parentProject = activeProject?.parent_id ? projects.find(p => p.id === activeProject.parent_id) : null;
+  const isOwnerOrAdmin = isAdmin || 
+    (activeProject && (activeProject as any).owner_id?.toString() === userId) ||
+    (parentProject && (parentProject as any).owner_id?.toString() === userId);
+  const hasWriteAccessProjects = projects.filter((p: any) => {
+    if (isAdmin) return true;
+    if (p.owner_id?.toString() === userId) return true;
+    if (p.parent_id) {
+      const parent = projects.find(parentProj => parentProj.id === p.parent_id);
+      if (parent && (parent as any).owner_id?.toString() === userId) return true;
+    }
+    return false;
+  });
 
   const { data: linksData, mutate: mutateLinks, isLoading: loadingLinks } = useSWR(
     selectedProjectId ? `/api/links?projectId=${selectedProjectId}` : null,
@@ -71,8 +92,23 @@ export default function DashboardPage() {
   );
 
   const internalLinks = links.filter((l: any) => l.url?.includes('dashboard?channel='));
-  const notebookLMLinks = links.filter((l: any) => !l.url?.includes('dashboard?channel=') && l.url?.includes('notebooklm.google.com'));
-  const otherLinks = links.filter((l: any) => !l.url?.includes('dashboard?channel=') && !l.url?.includes('notebooklm.google.com'));
+  
+  // 加入子頻道的「虛擬連結」到內部連結區
+  const subChannelLinks = projects
+    .filter(p => p.parent_id === selectedProjectId)
+    .map(p => ({
+      id: `sub-${p.id}`, // 使用特殊 ID 避免衝突
+      title: p.name,
+      url: `/dashboard?channel=${p.id}`,
+      description: p.description || '子頻道專案',
+      created_at: (p as any).created_at || new Date().toISOString(),
+      icon: p.icon
+    }));
+
+  const allInternalLinks = [...subChannelLinks, ...internalLinks];
+  
+  const aiToolLinks = links.filter((l: any) => !l.url?.includes('dashboard?channel=') && l.category === 'ai_tool');
+  const otherLinks = links.filter((l: any) => !l.url?.includes('dashboard?channel=') && l.category !== 'ai_tool');
 
   const handleCopyLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +120,8 @@ export default function DashboardPage() {
         projectId: Number(copyTargetProjectId),
         title: copyLinkModalState.link.title,
         url: copyLinkModalState.link.url,
-        description: copyLinkModalState.link.description
+        description: copyLinkModalState.link.description,
+        category: copyLinkModalState.link.category || 'other'
       })
     });
     if (res.ok) {
@@ -107,7 +144,7 @@ export default function DashboardPage() {
     if (res.ok) {
       toast.success('專案建立成功！');
       setIsNewProjectModalOpen(false);
-      setNewProject({ name: '', description: '' });
+      setNewProject({ name: '', description: '', parent_id: null });
       await refreshProjects();
     } else {
       const data = await res.json();
@@ -121,7 +158,7 @@ export default function DashboardPage() {
     const res = await fetch(`/api/projects/${selectedProjectId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editProjectData)
+      body: JSON.stringify({ name: editProjectData.name, description: editProjectData.description, parent_id: editProjectData.parent_id })
     });
     if (res.ok) {
       toast.success('專案更新成功！');
@@ -143,7 +180,7 @@ export default function DashboardPage() {
     if (res.ok) {
       toast.success('成功加入收錄！');
       setIsNewLinkModalOpen(false);
-      setNewLink({ title: '', url: '', description: '' });
+      setNewLink({ title: '', url: '', description: '', category: 'ai_tool' });
       mutateLinks();
     } else {
       const data = await res.json();
@@ -157,7 +194,7 @@ export default function DashboardPage() {
     const res = await fetch(`/api/links/${editLinkData.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: editLinkData.title, url: editLinkData.url, description: editLinkData.description })
+      body: JSON.stringify({ title: editLinkData.title, url: editLinkData.url, description: editLinkData.description, category: editLinkData.category })
     });
     if (res.ok) {
       toast.success('連結更新成功！');
@@ -310,7 +347,7 @@ export default function DashboardPage() {
                  {isOwnerOrAdmin && (
                    <>
                      <button
-                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditLinkData({ id: link.id, title: link.title, url: link.url, description: link.description || '' }); setIsEditLinkModalOpen(true); }}
+                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditLinkData({ id: link.id, title: link.title, url: link.url, description: link.description || '', category: link.category || 'other' }); setIsEditLinkModalOpen(true); }}
                        className="text-white/40 hover:text-white transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md interactive-card"
                        title="編輯系統"
                      >
@@ -327,7 +364,7 @@ export default function DashboardPage() {
                  )}
                </div>
                <div className={`w-8 h-8 rounded-md ${iconBg} flex items-center justify-center text-lg mb-3 border ${iconBorder} shrink-0`}>
-                 {emoji}
+                 {(link as any).icon || emoji}
                </div>
                      <div className="text-xs font-semibold text-white/90 truncate pr-6 group-hover:text-primary transition-colors leading-tight mb-1">{link.title}</div>
                      <div className="text-[10px] text-white/40 line-clamp-2 leading-relaxed mb-auto">{link.description || '無備註'}</div>
@@ -384,6 +421,19 @@ export default function DashboardPage() {
                     <input required autoFocus className="glass-input" value={newProject.name} onChange={e => setNewProject({...newProject, name: e.target.value})} placeholder="例如: 2024 行銷企劃研究" />
                   </div>
                   <div>
+                    <label className="text-xs text-white/50 block mb-1">所屬母頻道 (Parent Channel)</label>
+                    <select 
+                      className="glass-input w-full appearance-none bg-black/30"
+                      value={newProject.parent_id || ''} 
+                      onChange={e => setNewProject({...newProject, parent_id: e.target.value ? Number(e.target.value) : null})}
+                    >
+                      <option value="">無 (設定為頂層頻道)</option>
+                      {projects.filter(p => !p.parent_id && p.is_global_welcome !== 1).map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
                     <label className="text-xs text-white/50 block mb-1">專案描述 (選填)</label>
                     <textarea className="glass-input resize-none h-20" value={newProject.description} onChange={e => setNewProject({...newProject, description: e.target.value})} placeholder="簡述這個專案的目標與範圍..." />
                   </div>
@@ -413,7 +463,7 @@ export default function DashboardPage() {
               {isOwnerOrAdmin && (
                 <button 
                   onClick={() => {
-                    setEditProjectData({ name: activeProject.name, description: activeProject.description || '' });
+                    setEditProjectData({ name: activeProject.name, description: activeProject.description || '', parent_id: activeProject.parent_id || null });
                     setIsEditProjectModalOpen(true);
                   }} 
                   className="text-white/20 hover:text-white/80 p-1 opacity-0 group-hover:opacity-100 transition-all rounded bg-white/5 hover:bg-white/10"
@@ -421,6 +471,11 @@ export default function DashboardPage() {
                 >
                   ✎
                 </button>
+              )}
+              {activeProject.parent_id && (
+                <div className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] text-white/40 font-medium">
+                  子頻道
+                </div>
               )}
               <button
                 onClick={() => {
@@ -440,17 +495,30 @@ export default function DashboardPage() {
         <div className="flex gap-3 shrink-0 items-center">
           {/* Search & Sort */}
           <div className="flex gap-2">
-            <div className="relative group/sort">
-              <button className="h-10 px-3 bg-white/5 border border-white/10 rounded-lg text-xs text-white/60 hover:text-white hover:border-white/20 transition-all flex items-center gap-2">
-                {sortMethod === 'manual' ? '⇅ 自定義' : sortMethod === 'name' ? '🔤 名稱' : '👤 建立者'}
-                <svg className="w-3 h-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+          <div className="flex gap-2">
+            {!activeProject.parent_id ? (
+              <button 
+                onClick={() => {
+                  setNewProject({ name: '', description: '', parent_id: activeProject.id });
+                  setIsNewProjectModalOpen(true);
+                }}
+                className="h-10 px-4 bg-primary/10 border border-primary/20 rounded-lg text-xs text-primary hover:bg-primary/20 transition-all flex items-center gap-2 font-medium"
+              >
+                <span>➕</span> 新增子頻道
               </button>
-              <div className="absolute right-0 top-full mt-1 w-32 bg-card border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/sort:opacity-100 group-hover/sort:visible transition-all z-20 overflow-hidden backdrop-blur-md">
-                <button onClick={() => setSortMethod('manual')} className={`w-full text-left px-4 py-2.5 text-xs hover:bg-white/5 transition-colors ${sortMethod === 'manual' ? 'bg-primary/10 text-primary font-medium' : 'text-white/60'}`}>⇅ 手動排序</button>
-                <button onClick={() => setSortMethod('name')} className={`w-full text-left px-4 py-2.5 text-xs hover:bg-white/5 transition-colors ${sortMethod === 'name' ? 'bg-primary/10 text-primary font-medium' : 'text-white/60'}`}>🔤 依名稱排序</button>
-                <button onClick={() => setSortMethod('creator')} className={`w-full text-left px-4 py-2.5 text-xs hover:bg-white/5 transition-colors ${sortMethod === 'creator' ? 'bg-primary/10 text-primary font-medium' : 'text-white/60'}`}>👤 依建立者排序</button>
+            ) : (
+              <div className="relative group/sort">
+                <button className="h-10 px-3 bg-white/5 border border-white/10 rounded-lg text-xs text-white/60 hover:text-white hover:border-white/20 transition-all flex items-center gap-2">
+                  {sortMethod === 'manual' ? '⇅ 自定義' : sortMethod === 'name' ? '🔤 名稱' : '👤 建立者'}
+                  <svg className="w-3 h-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                <div className="absolute right-0 top-full mt-1 w-32 bg-card border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/sort:opacity-100 group-hover/sort:visible transition-all z-20 overflow-hidden backdrop-blur-md">
+                  <button onClick={() => setSortMethod('manual')} className={`w-full text-left px-4 py-2.5 text-xs hover:bg-white/5 transition-colors ${sortMethod === 'manual' ? 'bg-primary/10 text-primary font-medium' : 'text-white/60'}`}>⇅ 手動排序</button>
+                  <button onClick={() => setSortMethod('name')} className={`w-full text-left px-4 py-2.5 text-xs hover:bg-white/5 transition-colors ${sortMethod === 'name' ? 'bg-primary/10 text-primary font-medium' : 'text-white/60'}`}>🔤 依名稱排序</button>
+                  <button onClick={() => setSortMethod('creator')} className={`w-full text-left px-4 py-2.5 text-xs hover:bg-white/5 transition-colors ${sortMethod === 'creator' ? 'bg-primary/10 text-primary font-medium' : 'text-white/60'}`}>👤 依建立者排序</button>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="relative">
               <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -495,10 +563,10 @@ export default function DashboardPage() {
       ) : (
         <div className="space-y-4 animate-in fade-in">
           {/* Internal Links */}
-          {renderLinksSection("內部 Channel 連結", "🗂️", internalLinks, "internal", "目前尚未收錄任何內部 Channel 連結", "bg-amber-500/10", "border-amber-500/20", "bg-amber-500/20 shadow-[inset_0_2px_10px_rgba(245,158,11,0.2)]", "border-amber-500/30", "📂")}
+          {renderLinksSection("內部 Channel 連結", "🗂️", allInternalLinks, "internal", "目前尚未收錄任何內部 Channel 連結", "bg-amber-500/10", "border-amber-500/20", "bg-amber-500/20 shadow-[inset_0_2px_10px_rgba(245,158,11,0.2)]", "border-amber-500/30", "📂")}
 
-          {/* NotebookLM Links */}
-          {renderLinksSection("NotebookLM 專用", "📓", notebookLMLinks, "notebooklm", "目前尚未收錄任何 NotebookLM 連結", "bg-blue-500/10", "border-blue-500/20", "bg-blue-500/20", "border-blue-500/30", "📝")}
+          {/* AI Tools & Project Tracking Links */}
+          {renderLinksSection("常用 AI 工具 (例如 NotebookLM 筆記本) ＆ 專案追蹤管理", "🤖", aiToolLinks, "ai_tool", "目前尚未收錄任何 AI 工具連結", "bg-blue-500/10", "border-blue-500/20", "bg-blue-500/20", "border-blue-500/30", "✨")}
 
           {/* Other External Links */}
           {renderLinksSection("其他外部連結", "🔗", otherLinks, "other", "目前尚未收錄任何外部連結", "bg-white/5", "border-white/10", "bg-white/10", "border-white/20", "🌐")}
@@ -514,6 +582,19 @@ export default function DashboardPage() {
                   <div>
                     <label className="text-xs text-white/50 block mb-1">專案名稱</label>
                     <input required autoFocus className="glass-input" value={editProjectData.name} onChange={e => setEditProjectData({...editProjectData, name: e.target.value})} placeholder="專案名稱" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/50 block mb-1">所屬母頻道 (Parent Channel)</label>
+                    <select 
+                      className="glass-input w-full appearance-none bg-black/30"
+                      value={editProjectData.parent_id || ''} 
+                      onChange={e => setEditProjectData({...editProjectData, parent_id: e.target.value ? Number(e.target.value) : null})}
+                    >
+                      <option value="">無 (設定為頂層頻道)</option>
+                      {projects.filter(p => !p.parent_id && p.id !== selectedProjectId && p.is_global_welcome !== 1).map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="text-xs text-white/50 block mb-1">專案描述</label>
@@ -559,8 +640,21 @@ export default function DashboardPage() {
                   <input required type="url" className="glass-input" value={editLinkData.url} onChange={e => setEditLinkData({...editLinkData, url: e.target.value})} placeholder="https://..." />
                 </div>
                 <div>
+                  <label className="text-xs text-white/50 block mb-1">顯示區域</label>
+                  <div className="flex gap-4 p-2 bg-black/20 rounded-lg border border-white/5">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input type="radio" checked={editLinkData.category === 'ai_tool'} onChange={() => setEditLinkData({...editLinkData, category: 'ai_tool'})} className="accent-primary" />
+                      <span className="text-xs text-white/60 group-hover:text-white transition-colors">常用 AI 工具</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input type="radio" checked={editLinkData.category === 'other'} onChange={() => setEditLinkData({...editLinkData, category: 'other'})} className="accent-primary" />
+                      <span className="text-xs text-white/60 group-hover:text-white transition-colors">其他外部連結</span>
+                    </label>
+                  </div>
+                </div>
+                <div>
                   <label className="text-xs text-white/50 block mb-1">簡單備註 (選填)</label>
-                  <textarea className="glass-input resize-none h-20" value={editLinkData.description} onChange={e => setEditLinkData({...editLinkData, description: e.target.value})} placeholder="簡述這個筆記本的核心重點..." />
+                  <textarea className="glass-input resize-none h-20" value={editLinkData.description} onChange={e => setEditLinkData({...editLinkData, description: e.target.value})} placeholder="簡述這個連結的核心重點..." />
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <button type="button" onClick={() => setIsEditLinkModalOpen(false)} className="px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 transition-colors">取消</button>
@@ -586,8 +680,21 @@ export default function DashboardPage() {
                   <input required type="url" className="glass-input" value={newLink.url} onChange={e => setNewLink({...newLink, url: e.target.value})} placeholder="https://..." />
                 </div>
                 <div>
+                  <label className="text-xs text-white/50 block mb-1">顯示區域</label>
+                  <div className="flex gap-4 p-2 bg-black/20 rounded-lg border border-white/5">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input type="radio" checked={newLink.category === 'ai_tool'} onChange={() => setNewLink({...newLink, category: 'ai_tool'})} className="accent-primary" />
+                      <span className="text-xs text-white/60 group-hover:text-white transition-colors">常用 AI 工具</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input type="radio" checked={newLink.category === 'other'} onChange={() => setNewLink({...newLink, category: 'other'})} className="accent-primary" />
+                      <span className="text-xs text-white/60 group-hover:text-white transition-colors">其他外部連結</span>
+                    </label>
+                  </div>
+                </div>
+                <div>
                   <label className="text-xs text-white/50 block mb-1">簡單備註 (選填)</label>
-                  <textarea className="glass-input resize-none h-20" value={newLink.description} onChange={e => setNewLink({...newLink, description: e.target.value})} placeholder="簡述這個筆記本的核心重點..." />
+                  <textarea className="glass-input resize-none h-20" value={newLink.description} onChange={e => setNewLink({...newLink, description: e.target.value})} placeholder="簡述這個連結的核心重點..." />
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <button type="button" onClick={() => setIsNewLinkModalOpen(false)} className="px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 transition-colors">取消</button>

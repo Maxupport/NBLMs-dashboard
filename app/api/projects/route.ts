@@ -31,10 +31,14 @@ export async function GET(request: Request) {
           FROM projects p
           LEFT JOIN users u ON p.owner_id = u.id
           LEFT JOIN project_members pm ON p.id = pm.project_id
-          WHERE p.owner_id = ? OR pm.user_id = ? OR p.is_global_welcome = 1
+          WHERE p.owner_id = ? 
+             OR pm.user_id = ? 
+             OR p.is_global_welcome = 1
+             OR p.parent_id IN (SELECT id FROM projects WHERE owner_id = ?)
+             OR p.parent_id IN (SELECT project_id FROM project_members WHERE user_id = ?)
           ORDER BY p.sort_order ASC, p.created_at DESC
         `,
-        args: [user.sub, user.sub]
+        args: [user.sub, user.sub, user.sub, user.sub]
       });
       projects = res.rows;
     }
@@ -50,7 +54,8 @@ const projectSchema = z.object({
   name: z.string().min(1, '專案名稱不得為空'),
   description: z.string().optional(),
   icon: z.string().optional(),
-  color: z.string().optional()
+  color: z.string().optional(),
+  parent_id: z.number().nullable().optional()
 });
 
 // POST: 建立新專案（任何登入使用者皆可）
@@ -67,29 +72,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const { name, description, icon, color } = parsed.data;
+    const { name, description, icon, color, parent_id } = parsed.data;
 
     const db = await getDb();
     
-    // Check channel limit for members
-    if (user.role !== 'admin') {
+    // Check channel limit for members (only for parent channels)
+    if (user.role !== 'admin' && !parent_id) {
       const limitRes = await db.execute({
-        sql: 'SELECT COUNT(*) as count FROM projects WHERE owner_id = ?',
+        sql: 'SELECT COUNT(*) as count FROM projects WHERE owner_id = ? AND parent_id IS NULL',
         args: [user.sub]
       });
       const currentCount = parseInt((limitRes.rows[0]?.count as any) || 0);
       if (currentCount >= 10) {
-        return NextResponse.json({ error: '一般成員最多只能建立 10 個頻道專案' }, { status: 403 });
+        return NextResponse.json({ error: '一般成員最多只能建立 10 個頂層頻道專案' }, { status: 403 });
       }
     }
 
-    // Get max sort_order
-    const maxSortRes = await db.execute('SELECT MAX(sort_order) as maxOrder FROM projects');
+    // Get max sort_order within the same level
+    const maxSortRes = await db.execute({
+      sql: 'SELECT MAX(sort_order) as maxOrder FROM projects WHERE (parent_id = ? OR (? IS NULL AND parent_id IS NULL))',
+      args: [parent_id || null, parent_id || null]
+    });
     const nextOrder = (parseInt((maxSortRes.rows[0]?.maxOrder as any) || 0)) + 1;
 
     const result = await db.execute({
-      sql: `INSERT INTO projects (name, description, icon, color, owner_id, sort_order) VALUES (?, ?, ?, ?, ?, ?)`,
-      args: [name, description || '', icon || '📁', color || '#6366f1', user.sub, nextOrder]
+      sql: `INSERT INTO projects (name, description, icon, color, owner_id, sort_order, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [name, description || '', icon || '📁', color || '#6366f1', user.sub, nextOrder, parent_id || null]
     });
 
     return NextResponse.json({ success: true, projectId: result.lastInsertRowid?.toString() });
