@@ -81,21 +81,22 @@ function Sidebar({ width }: { width: number }) {
   const hiddenCount = hiddenProjects.size;
 
   const specialProject = visibleProjects.find(p => p.is_global_welcome === 1);
-  const normalProjects = visibleProjects.filter(p => p.id !== specialProject?.id);
+  const ghostProjects = userRole === 'admin' ? visibleProjects.filter(p => p.owner_username === 'Ghost') : [];
+  const normalProjects = visibleProjects.filter(p => p.id !== specialProject?.id && p.owner_username !== 'Ghost');
 
   // Grouping logic: Identify projects that should be top-level in the current view
   const accessibleProjectIds = new Set(normalProjects.map(p => p.id));
   
   const parentProjects = normalProjects.filter(p => {
-    // If it has no parent, it's top-level
     if (!p.parent_id) return true;
-    // If it has a parent but the parent isn't in the view, it's top-level for this user
     if (!accessibleProjectIds.has(p.parent_id)) return true;
     return false;
   });
 
-  const childProjectsMap = normalProjects.reduce((acc, p) => {
-    if (p.parent_id && accessibleProjectIds.has(p.parent_id)) {
+  const ghostParentProjects = ghostProjects.filter(p => !p.parent_id || !ghostProjects.find(gp => gp.id === p.parent_id));
+
+  const childProjectsMap = visibleProjects.reduce((acc, p) => {
+    if (p.parent_id) {
       if (!acc[p.parent_id]) acc[p.parent_id] = [];
       acc[p.parent_id].push(p);
     }
@@ -307,7 +308,22 @@ function Sidebar({ width }: { width: number }) {
         {parentProjects.map(p => renderProjectItem(p))}
       </div>
       
-      {normalProjects.length === 0 && !isCollapsed && (
+      {/* Ghost Channels Section (Admin Only) */}
+      {!isCollapsed && userRole === 'admin' && ghostParentProjects.length > 0 && (
+        <div className="mt-8 pt-4 border-t border-white/5 space-y-2">
+          <div className="flex items-center justify-between px-2 mb-2">
+             <div className="text-[10px] uppercase tracking-widest font-bold text-red-400/50 flex items-center gap-2">
+               <span>👻</span> Recycle Bin
+             </div>
+             <span className="text-[10px] bg-red-500/10 text-red-400/60 px-1.5 py-0.5 rounded-full font-mono">{ghostParentProjects.length}</span>
+          </div>
+          <div className="space-y-0.5 opacity-60 hover:opacity-100 transition-opacity">
+            {ghostParentProjects.map(p => renderProjectItem(p))}
+          </div>
+        </div>
+      )}
+
+      {normalProjects.length === 0 && ghostParentProjects.length === 0 && !isCollapsed && (
         <div className="text-xs text-white/30 italic p-3 text-center">
           {userRole === 'admin' && hiddenCount > 0 && !showAllAdmin
             ? `${hiddenCount} 個頻道已隱藏`
