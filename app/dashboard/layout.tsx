@@ -258,9 +258,15 @@ function Sidebar({ width }: { width: number }) {
         <button
           onClick={() => {
              setSelectedProjectId(null);
-             router.push('/dashboard');
-             // Trigger event to open modal
-             window.dispatchEvent(new CustomEvent('open-new-project-modal', { detail: { parent_id: null } }));
+             if (pathname !== '/dashboard') {
+               router.push('/dashboard');
+               // Give the new page time to mount and register the event listener
+               setTimeout(() => {
+                 window.dispatchEvent(new CustomEvent('open-new-project-modal', { detail: { parent_id: null } }));
+               }, 100);
+             } else {
+               window.dispatchEvent(new CustomEvent('open-new-project-modal', { detail: { parent_id: null } }));
+             }
           }}
           title={isCollapsed ? "新增頂層 Channel" : ""}
           className={`w-full transition-all flex items-center mb-4 border interactive-card ${isCollapsed ? 'justify-center py-3 rounded-2xl' : 'px-4 py-2.5 rounded-xl gap-3'} ${
