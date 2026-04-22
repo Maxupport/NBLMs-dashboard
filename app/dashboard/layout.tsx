@@ -98,9 +98,10 @@ function Sidebar({ width }: { width: number }) {
     return acc;
   }, {} as Record<number, any[]>);
 
-  const renderProjectItem = (p: any, isChild = false) => {
+  const renderProjectItem = (p: any, isChild = false, parentColor?: string) => {
     const hasChildren = childProjectsMap[p.id] && childProjectsMap[p.id].length > 0;
     const isParentCollapsed = collapsedParents.has(p.id);
+    const channelColor = isChild ? (parentColor || p.color || '#6366f1') : (p.color || '#6366f1');
 
     return (
       <div key={p.id} className="space-y-0.5">
@@ -138,7 +139,7 @@ function Sidebar({ width }: { width: number }) {
               }}
               disabled={p.status === 'disabled'}
               title={isCollapsed ? p.name : ""}
-              className={`flex-1 text-left transition-all text-sm flex items-center relative interactive-card ${isCollapsed ? 'justify-center p-2 rounded-xl' : 'px-3 py-1.5 rounded-lg gap-2 pr-8'} ${
+              className={`flex-1 text-left transition-all text-sm flex items-center relative interactive-card ${isCollapsed ? 'justify-center p-2 rounded-xl' : 'px-2 py-1.5 rounded-lg gap-2 pr-8'} ${
                 p.status === 'disabled' ? 'opacity-60 cursor-not-allowed bg-red-900/10 text-white/40 border border-red-500/10' :
                 selectedProjectId === p.id ? 'bg-white/10 text-white border border-white/20 shadow-lg' : 'text-white/50 hover:bg-white/5 hover:text-white'
               }`}
@@ -147,7 +148,27 @@ function Sidebar({ width }: { width: number }) {
                 <div className={`absolute -left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-[1px] bg-white/10 group-hover:bg-white/30 transition-colors ${isChild ? 'w-2.5' : ''}`} />
               )}
               
-              <span className={`shrink-0 ${p.status === 'disabled' ? 'opacity-50 grayscale' : ''}`}>{p.icon}</span> 
+              {/* Channel Icon: large colored folder for parent, small page icon for child */}
+              {isChild ? (
+                <span
+                  className="shrink-0 flex items-center justify-center w-4 h-4 rounded"
+                  style={{ color: channelColor + '99', backgroundColor: channelColor + '1a' }}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </span>
+              ) : (
+                <span
+                  className="shrink-0 flex items-center justify-center w-5 h-5 rounded-md"
+                  style={{ color: channelColor, backgroundColor: channelColor + '25' }}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                  </svg>
+                </span>
+              )}
+
               {!isCollapsed && <span className={`truncate text-[13px] ${p.status === 'disabled' ? 'line-through' : ''} ${selectedProjectId === p.id ? 'font-medium' : ''}`}>{p.name}</span>}
               
               {!isCollapsed && sortMethod === 'manual' && (
@@ -160,7 +181,6 @@ function Sidebar({ width }: { width: number }) {
               <button
                 onClick={(e) => { 
                   e.stopPropagation(); 
-                  // Use a Custom Event to trigger the New Project Modal with parent_id
                   window.dispatchEvent(new CustomEvent('open-new-project-modal', { detail: { parent_id: p.id, parent_name: p.name } }));
                 }}
                 className="p-1 opacity-0 group-hover:opacity-100 text-white/30 hover:text-primary transition-all rounded-md hover:bg-primary/10"
@@ -186,10 +206,10 @@ function Sidebar({ width }: { width: number }) {
           </div>
         </div>
 
-        {/* Children Rendering */}
+        {/* Children Rendering - pass parent color down */}
         {!isCollapsed && hasChildren && !isParentCollapsed && (
           <div className="ml-2 pl-2 border-l border-white/5 space-y-0.5 animate-in slide-in-from-top-1 duration-200">
-            {childProjectsMap[p.id].map(child => renderProjectItem(child, true))}
+            {childProjectsMap[p.id].map(child => renderProjectItem(child, true, channelColor))}
           </div>
         )}
       </div>

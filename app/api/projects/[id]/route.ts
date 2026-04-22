@@ -48,7 +48,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     if (!allowed) return NextResponse.json({ error: '拒絕存取：只有專案建立者或管理員可修改' }, { status: 403 });
 
     const body = await request.json();
-    const { name, description, parent_id } = body;
+    const { name, description, parent_id, color } = body;
 
     if (!name?.trim()) {
       return NextResponse.json({ error: '專案名稱不得為空' }, { status: 400 });
@@ -56,8 +56,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
     const db = await getDb();
     await db.execute({
-      sql: 'UPDATE projects SET name = ?, description = ?, parent_id = ? WHERE id = ?',
-      args: [name.trim(), description || '', parent_id !== undefined ? parent_id : null, params.id]
+      sql: 'UPDATE projects SET name = ?, description = ?, parent_id = ?, color = ? WHERE id = ?',
+      args: [name.trim(), description || '', parent_id !== undefined ? parent_id : null, color || '#6366f1', params.id]
     });
 
     return NextResponse.json({ success: true });

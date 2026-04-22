@@ -18,7 +18,7 @@ export default function DashboardPage() {
   const [newProject, setNewProject] = useState({ name: '', description: '', parent_id: null as number | null });
 
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
-  const [editProjectData, setEditProjectData] = useState({ name: '', description: '', parent_id: null as number | null });
+  const [editProjectData, setEditProjectData] = useState({ name: '', description: '', parent_id: null as number | null, color: '#6366f1' });
 
   // Add Link Modal
   const [isNewLinkModalOpen, setIsNewLinkModalOpen] = useState(false);
@@ -158,7 +158,7 @@ export default function DashboardPage() {
     const res = await fetch(`/api/projects/${selectedProjectId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: editProjectData.name, description: editProjectData.description, parent_id: editProjectData.parent_id })
+      body: JSON.stringify({ name: editProjectData.name, description: editProjectData.description, parent_id: editProjectData.parent_id, color: editProjectData.color })
     });
     if (res.ok) {
       toast.success('專案更新成功！');
@@ -426,7 +426,7 @@ export default function DashboardPage() {
               {isOwnerOrAdmin && (
                 <button 
                   onClick={() => {
-                    setEditProjectData({ name: activeProject.name, description: activeProject.description || '', parent_id: activeProject.parent_id || null });
+                    setEditProjectData({ name: activeProject.name, description: activeProject.description || '', parent_id: activeProject.parent_id || null, color: (activeProject as any).color || '#6366f1' });
                     setIsEditProjectModalOpen(true);
                   }} 
                   className="text-white/20 hover:text-white/80 p-1 opacity-0 group-hover:opacity-100 transition-all rounded bg-white/5 hover:bg-white/10"
@@ -562,6 +562,24 @@ export default function DashboardPage() {
                     <label className="text-xs text-white/50 block mb-1">專案描述</label>
                     <textarea className="glass-input resize-none h-20" value={editProjectData.description} onChange={e => setEditProjectData({...editProjectData, description: e.target.value})} placeholder="簡述這個專案的目標與範圍..." />
                   </div>
+                  {/* Color Picker - only for parent channels */}
+                  {!editProjectData.parent_id && (
+                    <div>
+                      <label className="text-xs text-white/50 block mb-2">頻道主題色</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['#6366f1','#8b5cf6','#ec4899','#f43f5e','#f97316','#eab308','#22c55e','#14b8a6','#06b6d4','#3b82f6','#64748b','#a8a29e'].map(color => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => setEditProjectData({...editProjectData, color})}
+                            className={`w-6 h-6 rounded-full transition-all hover:scale-110 ${editProjectData.color === color ? 'ring-2 ring-white ring-offset-2 ring-offset-card scale-110' : ''}`}
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center pt-4">
                     <button type="button" onClick={async () => {
                       if(confirm('確定要永久刪除此專案嗎？動作無法復原。')) {
