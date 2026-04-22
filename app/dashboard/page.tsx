@@ -408,43 +408,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-
-        {/* New Project Modal */}
-        {isNewProjectModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in">
-             <div className="bg-card w-full max-w-md rounded-2xl border border-white/10 p-6 shadow-2xl relative">
-                <button onClick={() => setIsNewProjectModalOpen(false)} className="absolute top-4 right-4 text-white/40 hover:text-white">✕</button>
-                <h3 className="text-xl font-medium mb-4">建立新專案</h3>
-                <form onSubmit={handleCreateProject} className="space-y-4">
-                  <div>
-                    <label className="text-xs text-white/50 block mb-1">專案名稱</label>
-                    <input required autoFocus className="glass-input" value={newProject.name} onChange={e => setNewProject({...newProject, name: e.target.value})} placeholder="例如: 2024 行銷企劃研究" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-white/50 block mb-1">所屬母頻道 (Parent Channel)</label>
-                    <select 
-                      className="glass-input w-full appearance-none bg-black/30"
-                      value={newProject.parent_id || ''} 
-                      onChange={e => setNewProject({...newProject, parent_id: e.target.value ? Number(e.target.value) : null})}
-                    >
-                      <option value="">無 (設定為頂層頻道)</option>
-                      {projects.filter(p => !p.parent_id && p.is_global_welcome !== 1).map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-white/50 block mb-1">專案描述 (選填)</label>
-                    <textarea className="glass-input resize-none h-20" value={newProject.description} onChange={e => setNewProject({...newProject, description: e.target.value})} placeholder="簡述這個專案的目標與範圍..." />
-                  </div>
-                  <div className="flex justify-end gap-2 pt-4">
-                    <button type="button" onClick={() => setIsNewProjectModalOpen(false)} className="px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 transition-colors">取消</button>
-                    <button type="submit" className="px-4 py-2 rounded-lg text-sm bg-primary text-white hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">確認建立</button>
-                  </div>
-                </form>
-             </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -779,6 +742,49 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <button type="submit" className="px-4 py-2 rounded-lg text-sm bg-primary text-white hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">確認收錄</button>
+                </div>
+              </form>
+           </div>
+        </div>
+      )}
+      {/* Global New Project Modal - always rendered so sidebar + button works */}
+      {isNewProjectModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in">
+           <div className="bg-card w-full max-w-md rounded-2xl border border-white/10 p-6 shadow-2xl relative">
+              <button onClick={() => setIsNewProjectModalOpen(false)} className="absolute top-4 right-4 text-white/40 hover:text-white">✕</button>
+              <h3 className="text-xl font-medium mb-4">{newProject.parent_id ? '新增子頻道' : '建立新專案'}</h3>
+              <form onSubmit={handleCreateProject} className="space-y-4">
+                <div>
+                  <label className="text-xs text-white/50 block mb-1">{newProject.parent_id ? '子頻道名稱' : '專案名稱'}</label>
+                  <input required autoFocus className="glass-input" value={newProject.name} onChange={e => setNewProject({...newProject, name: e.target.value})} placeholder={newProject.parent_id ? '例如: 2024 Q1 報告' : '例如: 2024 行銷企劃研究'} />
+                </div>
+                {!newProject.parent_id && (
+                  <div>
+                    <label className="text-xs text-white/50 block mb-1">所屬母頻道 (Parent Channel)</label>
+                    <select 
+                      className="glass-input w-full appearance-none bg-black/30"
+                      value={newProject.parent_id || ''} 
+                      onChange={e => setNewProject({...newProject, parent_id: e.target.value ? Number(e.target.value) : null})}
+                    >
+                      <option value="">無 (設定為頂層頻道)</option>
+                      {projects.filter(p => !p.parent_id && p.is_global_welcome !== 1).map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {newProject.parent_id && (
+                  <div className="px-3 py-2 bg-white/5 rounded-lg border border-white/10 text-xs text-white/50">
+                    所屬父頻道：<span className="text-white/80 font-medium">{projects.find(p => p.id === newProject.parent_id)?.name}</span>
+                  </div>
+                )}
+                <div>
+                  <label className="text-xs text-white/50 block mb-1">描述 (選填)</label>
+                  <textarea className="glass-input resize-none h-20" value={newProject.description} onChange={e => setNewProject({...newProject, description: e.target.value})} placeholder="簡述這個專案的目標與範圍..." />
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                  <button type="button" onClick={() => setIsNewProjectModalOpen(false)} className="px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 transition-colors">取消</button>
+                  <button type="submit" className="px-4 py-2 rounded-lg text-sm bg-primary text-white hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">確認建立</button>
                 </div>
               </form>
            </div>
