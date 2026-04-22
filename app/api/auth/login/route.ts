@@ -6,7 +6,8 @@ import { z } from 'zod';
 
 const loginSchema = z.object({
   username: z.string().min(1, '請填寫帳號'),
-  password: z.string().min(1, '請填寫密碼')
+  password: z.string().min(1, '請填寫密碼'),
+  inviteProjectId: z.number().optional()
 });
 
 export async function POST(request: Request) {
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const { username, password } = parsed.data;
+    const { username, password, inviteProjectId } = parsed.data;
 
     const db = await getDb();
     const res = await db.execute({
@@ -45,6 +46,21 @@ export async function POST(request: Request) {
       sql: "UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?",
       args: [user.id]
     });
+
+    // 若帶有邀請碼，為該已存在的使用者綁定頻道
+    if (inviteProjectId) {
+      try {
+        await db.execute({
+          sql: `INSERT INTO project_members (project_id, user_id) VALUES (?, ?)`,
+          args: [inviteProjectId, user.id]
+        });
+      } catch (err: any) {
+        // 如果已經在該頻道，會觸發 UNIQUE constraint failed，我們直接忽略即可
+        if (!err.message?.includes('UNIQUE constraint failed')) {
+          console.error('Failed to bind inviteProjectId during login:', err);
+        }
+      }
+    }
 
     // 產生 JWT token
     const token = await createToken({

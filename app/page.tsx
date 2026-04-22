@@ -45,7 +45,10 @@ function AuthContent() {
 
     try {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-      const payload = isLogin ? formData : { ...formData, inviteProjectId: inviteProjectId ? Number(inviteProjectId) : undefined };
+      const basePayload = { inviteProjectId: inviteProjectId ? Number(inviteProjectId) : undefined };
+      const payload = isLogin 
+        ? { username: formData.username, password: formData.password, ...basePayload } 
+        : { ...formData, ...basePayload };
       
       const res = await fetch(endpoint, {
         method: "POST",
