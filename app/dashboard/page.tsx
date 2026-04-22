@@ -230,11 +230,34 @@ export default function DashboardPage() {
 
   const handleEditLink = async (e: React.FormEvent) => {
     e.preventDefault();
+    const role = (activeProject as any)?.my_role;
+    const isOwnerOrAdminActual = role === 'owner' || userRole === 'admin';
+
+    let payload: any = { 
+      title: editLinkData.title, 
+      url: editLinkData.url, 
+      description: editLinkData.description 
+    };
+
+    if (isOwnerOrAdminActual) {
+      payload.category = editLinkData.category;
+    } else {
+      // Editor: Save category change to local storage only
+      try {
+        const existingLayoutStr = localStorage.getItem(`custom_layout_${selectedProjectId}`);
+        const layout = existingLayoutStr ? JSON.parse(existingLayoutStr) : { order: [], categories: {} };
+        layout.categories[editLinkData.id] = editLinkData.category;
+        localStorage.setItem(`custom_layout_${selectedProjectId}`, JSON.stringify(layout));
+        console.log('💾 [Edit Link] Editor category change saved to localStorage.');
+      } catch(e) {}
+    }
+
     const res = await fetch(`/api/links/${editLinkData.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: editLinkData.title, url: editLinkData.url, description: editLinkData.description, category: editLinkData.category })
+      body: JSON.stringify(payload)
     });
+    
     if (res.ok) {
       toast.success('連結更新成功！');
       setIsEditLinkModalOpen(false);
@@ -245,37 +268,38 @@ export default function DashboardPage() {
     }
   };
 
-  const handleLinkDrop = async (dropId: number, targetCategory: string) => {
+  const handleLinkDrop = async (dropId: number | null, targetCategory: string) => {
     if (!draggedLinkId || draggedLinkId === dropId) return;
     
-    // We work with the already processed rawLinks (which might have local overrides)
     const currentLinks = [...rawLinks];
     const draggedLink = currentLinks.find(l => l.id === draggedLinkId);
     if (!draggedLink) return;
 
     // Remove from old position
     const filteredLinks = currentLinks.filter(l => l.id !== draggedLinkId);
-    // Find new position
-    const targetIndex = filteredLinks.findIndex(l => l.id === dropId);
+    
+    // Determine new index
+    let targetIndex;
+    if (dropId === null) {
+      // Dropped on empty section container -> append to end
+      targetIndex = filteredLinks.length;
+    } else {
+      targetIndex = filteredLinks.findIndex(l => l.id === dropId);
+    }
     
     if (targetIndex === -1) return;
     
-    // Update category for the moved item
     const updatedMovedItem = { ...draggedLink, category: targetCategory };
     filteredLinks.splice(targetIndex, 0, updatedMovedItem);
 
     const finalOrderedIds = filteredLinks.map((l: any) => l.id);
     
-    // Optimistic update
     mutateLinks({ links: filteredLinks }, false);
 
     if (isOwnerOrAdmin) {
-      console.log('🚨 [Debug] isOwnerOrAdmin is TRUE. Performing global database update.');
       const confirmGlobal = window.confirm('系統判定您擁有管理權限，即將更新「全域」排序與分區。確定要影響所有人嗎？');
-      
       if (confirmGlobal) {
         try {
-          // Update category first if changed
           if (draggedLink.category !== targetCategory) {
              await fetch(`/api/links/${draggedLinkId}`, {
                method: 'PATCH',
@@ -283,7 +307,6 @@ export default function DashboardPage() {
                body: JSON.stringify({ title: draggedLink.title, url: draggedLink.url, category: targetCategory })
              });
           }
-          // Then reorder
           const res = await fetch('/api/links/reorder', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -292,22 +315,17 @@ export default function DashboardPage() {
           if (!res.ok) throw new Error('API Reorder failed');
           mutateLinks();
         } catch(err) {
-           mutateLinks(); // Rollback
+           mutateLinks(); 
         }
       }
     } else {
-      console.log('✅ [Debug] isOwnerOrAdmin is FALSE. Performing local-only layout update.');
       try {
         const existingLayoutStr = localStorage.getItem(`custom_layout_${selectedProjectId}`);
         const layout = existingLayoutStr ? JSON.parse(existingLayoutStr) : { order: [], categories: {} };
-        
         layout.order = finalOrderedIds;
         layout.categories[draggedLinkId] = targetCategory;
-        
         localStorage.setItem(`custom_layout_${selectedProjectId}`, JSON.stringify(layout));
-      } catch(e) {
-        console.error('Save local layout error:', e);
-      }
+      } catch(e) {}
     }
     
     setDraggedLinkId(null);
@@ -357,7 +375,22 @@ export default function DashboardPage() {
       <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2 px-1">
         <span>{icon}</span> {title}
       </h3>
-      <div className={`flex flex-row overflow-x-auto gap-3 pb-3 custom-scrollbar scroll-smooth p-2.5 rounded-2xl bg-black/20 border border-white/5 ${type==='internal' ? 'shadow-[inset_0_2px_10px_rgba(245,158,11,0.05)]' : ''}`}>
+      <div 
+        onDragOver={(e) => {
+          const isTargetInternal = type === 'internal';
+          const isDraggedInternal = draggedLinkType === 'internal';
+          
+          if (isTargetInternal === isDraggedInternal) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          handleLinkDrop(null, type);
+        }}
+        className={`flex flex-row overflow-x-auto gap-3 pb-3 custom-scrollbar scroll-smooth p-2.5 rounded-2xl bg-black/20 border border-white/5 ${type==='internal' ? 'shadow-[inset_0_2px_10px_rgba(245,158,11,0.05)]' : ''}`}
+      >
         {linkArray.length > 0 ? linkArray.map((link: any) => {
           const isInternal = type === 'internal';
           const match = isInternal ? link.url.match(/channel=([^&]+)/) : null;
@@ -374,7 +407,6 @@ export default function DashboardPage() {
                 setDraggedLinkId(link.id);
                 setDraggedLinkType(type);
                 e.dataTransfer.effectAllowed = 'move';
-                // Small hack to hide original element slightly while dragging
                 setTimeout(() => { if (e.target instanceof HTMLElement) e.target.style.opacity = '0.5'; }, 0);
               }}
               onDragEnd={(e) => {
@@ -383,8 +415,12 @@ export default function DashboardPage() {
                 setDraggedLinkType(null);
               }}
               onDragOver={(e) => {
-                if (draggedLinkId !== link.id) {
+                const isTargetInternal = type === 'internal';
+                const isDraggedInternal = draggedLinkType === 'internal';
+                
+                if (draggedLinkId !== link.id && (isTargetInternal === isDraggedInternal)) {
                   e.preventDefault();
+                  e.stopPropagation();
                   e.dataTransfer.dropEffect = 'move';
                 }
               }}
