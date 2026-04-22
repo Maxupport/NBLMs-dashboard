@@ -17,6 +17,7 @@ type Project = {
   status?: string;
   is_global_welcome?: number;
   parent_id?: number | null;
+  my_role?: string;
 };
 
 type ProjectContextType = {

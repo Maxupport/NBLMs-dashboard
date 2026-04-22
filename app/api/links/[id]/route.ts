@@ -23,16 +23,14 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
           AND (
             p.owner_id = ? 
             OR p.parent_id IN (SELECT id FROM projects WHERE owner_id = ?)
-            OR nl.project_id IN (SELECT project_id FROM project_members WHERE user_id = ? AND role = 'editor')
-            OR p.parent_id IN (SELECT project_id FROM project_members WHERE user_id = ? AND role = 'editor')
           )
         `,
-        args: [params.id, user.sub, user.sub, user.sub, user.sub]
+        args: [params.id, user.sub, user.sub]
       });
       if (res.rows.length > 0) canDelete = true;
     }
 
-    if (!canDelete) return NextResponse.json({ error: '只有頻道建立者、協作者或管理員可以刪除連結' }, { status: 403 });
+    if (!canDelete) return NextResponse.json({ error: '只有頻道建立者或管理員可以刪除連結' }, { status: 403 });
 
     await db.execute({
       sql: 'DELETE FROM notebook_links WHERE id = ?',

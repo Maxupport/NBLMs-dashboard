@@ -80,7 +80,26 @@ export default function DashboardPage() {
     fetcher,
     { dedupingInterval: 10000, revalidateOnFocus: false }
   );
-  const rawLinks: any[] = linksData?.links || [];
+  const rawLinks: any[] = useMemo(() => {
+    let arr = [...(linksData?.links || [])];
+    if (selectedProjectId && typeof window !== 'undefined' && activeProject?.my_role !== 'owner' && activeProject?.my_role !== 'admin') {
+      try {
+        const localOrderStr = localStorage.getItem(`custom_order_${selectedProjectId}`);
+        if (localOrderStr) {
+          const localOrderIds = JSON.parse(localOrderStr);
+          arr.sort((a, b) => {
+            const indexA = localOrderIds.indexOf(a.id);
+            const indexB = localOrderIds.indexOf(b.id);
+            if (indexA === -1 && indexB === -1) return 0;
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+          });
+        }
+      } catch(e) {}
+    }
+    return arr;
+  }, [linksData, selectedProjectId, activeProject?.my_role]);
   const links = useMemo(() => rawLinks.filter((l: any) => 
     !searchQuery ||
     l.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -217,18 +236,24 @@ export default function DashboardPage() {
     const finalOrderedIds = [...newArray.map((l: any) => l.id), ...allOtherLinks.map((l: any) => l.id)];
     
     // Optimistic update
-    mutateLinks({ links: [...links].sort((a: any, b: any) => finalOrderedIds.indexOf(a.id) - finalOrderedIds.indexOf(b.id)) }, false);
+    mutateLinks({ links: [...(linksData?.links || [])].sort((a: any, b: any) => finalOrderedIds.indexOf(a.id) - finalOrderedIds.indexOf(b.id)) }, false);
 
-    try {
-      const res = await fetch('/api/links/reorder', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderedIds: finalOrderedIds, projectId: selectedProjectId })
-      });
-      if (!res.ok) throw new Error('API Reorder failed');
-      mutateLinks();
-    } catch(err) {
-       mutateLinks(); // Rollback
+    if (isOwnerOrAdmin) {
+      try {
+        const res = await fetch('/api/links/reorder', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderedIds: finalOrderedIds, projectId: selectedProjectId })
+        });
+        if (!res.ok) throw new Error('API Reorder failed');
+        mutateLinks();
+      } catch(err) {
+         mutateLinks(); // Rollback
+      }
+    } else {
+      try {
+        localStorage.setItem(`custom_order_${selectedProjectId}`, JSON.stringify(finalOrderedIds));
+      } catch(e) {}
     }
     
     setDraggedLinkId(null);
@@ -290,9 +315,8 @@ export default function DashboardPage() {
               href={link.url}
               target={isInternal ? undefined : "_blank"}
               rel={isInternal ? undefined : "noopener noreferrer"}
-              draggable={isOwnerOrAdmin}
+              draggable={true}
               onDragStart={(e) => {
-                if (!isOwnerOrAdmin) return;
                 setDraggedLinkId(link.id);
                 setDraggedLinkType(type);
                 e.dataTransfer.effectAllowed = 'move';
@@ -337,23 +361,23 @@ export default function DashboardPage() {
                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                    </button>
                  )}
+                 {(isOwnerOrAdmin || activeProject?.my_role === 'editor') && (
+                   <button
+                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditLinkData({ id: link.id, title: link.title, url: link.url, description: link.description || '', category: link.category || 'other' }); setIsEditLinkModalOpen(true); }}
+                     className="text-white/40 hover:text-white transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md interactive-card"
+                     title="編輯系統"
+                   >
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                   </button>
+                 )}
                  {isOwnerOrAdmin && (
-                   <>
-                     <button
-                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditLinkData({ id: link.id, title: link.title, url: link.url, description: link.description || '', category: link.category || 'other' }); setIsEditLinkModalOpen(true); }}
-                       className="text-white/40 hover:text-white transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md interactive-card"
-                       title="編輯系統"
-                     >
-                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                     </button>
-                     <button 
-                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteLink(link.id); }}
-                       className="text-white/40 hover:text-red-400 transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md interactive-card"
-                       title="刪除"
-                     >
-                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                     </button>
-                   </>
+                   <button 
+                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteLink(link.id); }}
+                     className="text-white/40 hover:text-red-400 transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md interactive-card"
+                     title="刪除"
+                   >
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                   </button>
                  )}
                </div>
                <div className={`w-8 h-8 rounded-md ${iconBg} flex items-center justify-center text-lg mb-3 border ${iconBorder} shrink-0`}>
