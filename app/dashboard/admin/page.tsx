@@ -479,52 +479,75 @@ export default function AdminPage() {
               <button onClick={() => setIsMembersModalOpen(false)} className="absolute top-4 right-4 text-white/40 hover:text-white">✕</button>
               <h3 className="text-xl font-medium mb-1">頻道成員存取權限控管</h3>
               <p className="text-xs text-white/40 mb-2">正在設定：{selectedChannelForMembers?.name}</p>
-              <p className="text-xs text-white/30 mb-4 pb-4 border-b border-white/10">勾選後，該成員登入時將可在 Sidebar 看到並存取此頻道。</p>
+              <p className="text-xs text-white/30 mb-4 pb-4 border-b border-white/10">設定此頻道允許存取的名單與權限。加入後，該成員登入時將可在 Sidebar 看到並存取此頻道。</p>
               
               <div className="overflow-y-auto flex-1 space-y-2 mb-4">
-                {allEligibleUsers.map(u => {
-                  const memberRecord = projectMembers.find(m => m.id === u.id);
-                  const isChecked = !!memberRecord;
+                {/* 顯示已授權成員 */}
+                {projectMembers.map(memberRecord => {
+                  const u = allEligibleUsers.find(user => user.id === memberRecord.id);
+                  if (!u) return null;
                   
                   return (
-                    <div key={u.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 border border-white/5 transition-all group">
+                    <div key={u.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 transition-all group">
                       <div className="flex items-center gap-3">
-                        <input 
-                          type="checkbox" 
-                          checked={isChecked} 
-                          onChange={(e) => {
-                             if (e.target.checked) setProjectMembers([...projectMembers, { id: u.id, role: 'viewer' }]);
-                             else setProjectMembers(projectMembers.filter(m => m.id !== u.id));
-                          }}
-                          className="w-5 h-5 rounded border-white/20 bg-black/50 text-primary focus:ring-primary" 
-                        />
                         <div className="flex flex-col">
                           <span className="text-sm font-medium">{u.username}</span>
                           <span className="text-[10px] text-white/30">{u.email || '無電子信箱'}</span>
                         </div>
                       </div>
                       
-                      {isChecked && (
+                      <div className="flex items-center gap-2">
                         <select 
                           value={memberRecord.role}
                           onChange={(e) => {
                             setProjectMembers(projectMembers.map(m => m.id === u.id ? { ...m, role: e.target.value } : m));
                           }}
-                          className="text-[10px] bg-white/10 border-none rounded-lg py-1 px-2 text-white/70 hover:text-white cursor-pointer transition-colors"
+                          className="text-[10px] bg-black/40 border border-white/10 rounded-lg py-1.5 px-2 text-white/80 hover:text-white cursor-pointer transition-colors outline-none focus:border-primary/50"
                         >
-                          <option value="viewer" className="bg-[#1a1a1a]">👁️ 只能檢視</option>
-                          <option value="editor" className="bg-[#1a1a1a]">✍️ 可新增編輯</option>
+                          <option value="viewer">👁️ 只能檢視</option>
+                          <option value="editor">✍️ 可新增編輯</option>
                         </select>
-                      )}
+                        <button 
+                          type="button"
+                          onClick={() => setProjectMembers(projectMembers.filter(m => m.id !== u.id))}
+                          className="p-1.5 text-white/30 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                          title="移除成員"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
-                {allEligibleUsers.length === 0 && (
-                  <div className="text-sm text-white/40 text-center py-4">目前系統沒有任何成員可以授權。</div>
+                {projectMembers.length === 0 && (
+                  <div className="text-sm text-white/30 text-center py-6 bg-white/5 rounded-xl border border-white/5 border-dashed">目前尚無授權任何成員</div>
                 )}
               </div>
+              
+              {/* 新增成員區塊 */}
+              <div className="pt-4 border-t border-white/10 shrink-0 mb-4">
+                <label className="text-xs text-white/50 block mb-2">新增授權成員</label>
+                <div className="flex gap-2">
+                  <select 
+                    className="glass-input flex-1 text-sm py-2 px-3 appearance-none bg-black/20"
+                    onChange={(e) => {
+                      const uid = Number(e.target.value);
+                      if (uid && !projectMembers.find(m => m.id === uid)) {
+                        setProjectMembers([...projectMembers, { id: uid, role: 'viewer' }]);
+                        e.target.value = ""; // reset after selection
+                      }
+                    }}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>-- 從名單中選擇要加入的使用者 --</option>
+                    {allEligibleUsers.filter(u => !projectMembers.find(m => m.id === u.id)).map(u => (
+                      <option key={u.id} value={u.id} className="bg-[#1a1a1a]">{u.username} ({u.email || '無信箱'})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-white/10 shrink-0">
+              <div className="flex justify-end gap-2 shrink-0">
                 <button type="button" onClick={() => setIsMembersModalOpen(false)} className="px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 transition-colors">取消</button>
                 <button type="button" onClick={handleSaveMembers} className="px-4 py-2 rounded-lg text-sm bg-primary text-white hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">儲存並立即生效</button>
               </div>
