@@ -313,13 +313,13 @@ function Sidebar({ width }: { width: number }) {
           onClick={() => {
              router.push('/dashboard/feedback');
           }}
-          title={isCollapsed ? "使用者反饋留言區" : ""}
+          title={isCollapsed ? "使用者回饋 (互動留言板)" : ""}
           className={`w-full text-left transition-colors text-sm flex items-center interactive-card ${isCollapsed ? 'justify-center p-2 rounded-xl' : 'px-3 py-2 rounded-lg gap-2'} ${
             pathname?.includes('/feedback') ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-lg shadow-indigo-500/10' : 'text-white/60 hover:bg-white/5 hover:text-white'
           }`}
         >
           <span className="shrink-0">💬</span>
-          {!isCollapsed && <span className="truncate">使用者反饋留言區</span>}
+          {!isCollapsed && <span className="truncate">使用者回饋 (互動留言板)</span>}
         </button>
       </div>
     </div>
