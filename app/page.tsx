@@ -230,6 +230,20 @@ function AuthContent() {
           </button>
         </form>
 
+        {/* SEO Descriptive Text (Visual but subtle) */}
+        <section className="mt-12 pt-8 border-t border-white/5 text-center space-y-4">
+          <h2 className="text-sm font-semibold text-white/40 uppercase tracking-widest">關於 NBLMs LinkStation</h2>
+          <p className="text-xs text-white/30 leading-relaxed max-w-xs mx-auto">
+            NBLMs LinkStation 是一款專為管理 <strong>NotebookLM</strong> 數位知識筆記而設計的入口站台。
+            我們旨在消除繁瑣的連結尋找過程，提供結構化的筆記存取、<strong>頻道管理</strong>與團隊協作服務。
+          </p>
+          <div className="flex justify-center gap-4 text-[10px] text-white/20">
+             <span>🚀 一站式彙整</span>
+             <span>🔒 安全存取</span>
+             <span>🤝 團隊協作</span>
+          </div>
+        </section>
+
         <footer className="mt-12 text-center">
            <p className="text-[10px] text-white/20 uppercase tracking-[0.2em]">Powered by Nathan & Maxupport</p>
         </footer>
