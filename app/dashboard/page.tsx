@@ -68,9 +68,9 @@ export default function DashboardPage() {
 
   const activeProject = projects.find(p => p.id === selectedProjectId);
   const parentProject = activeProject?.parent_id ? projects.find(p => p.id === activeProject.parent_id) : null;
-  const isOwnerOrAdmin = isAdmin || 
+  const isOwnerOrAdmin = !!(isAdmin || 
     (activeProject && (activeProject as any).owner_id?.toString() === userId) ||
-    (parentProject && (parentProject as any).owner_id?.toString() === userId);
+    (parentProject && (parentProject as any).owner_id?.toString() === userId));
   const hasWriteAccessProjects = projects.filter((p: any) => {
     if (isAdmin) return true;
     if (p.owner_id?.toString() === userId) return true;
@@ -494,7 +494,6 @@ export default function DashboardPage() {
         </div>
         <div className="flex gap-3 shrink-0 items-center">
           {/* Search & Sort */}
-          <div className="flex gap-2">
           <div className="flex gap-2">
             {!activeProject.parent_id ? (
               <button 

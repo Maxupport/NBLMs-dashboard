@@ -32,9 +32,49 @@ function Sidebar({ width }: { width: number }) {
     });
   };
 
+  const handleDragStart = (e: React.DragEvent, id: number) => {
+    setDraggedId(id);
+    e.dataTransfer.setData('text/plain', id.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: number) => {
+    e.preventDefault();
+    if (draggedId !== id) {
+      setDragOverId(id);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: number) => {
+    e.preventDefault();
+    if (draggedId === null || draggedId === targetId) return;
+
+    const newProjects = [...projects];
+    const draggedIdx = newProjects.findIndex(p => p.id === draggedId);
+    const targetIdx = newProjects.findIndex(p => p.id === targetId);
+
+    if (draggedIdx !== -1 && targetIdx !== -1) {
+      const [removed] = newProjects.splice(draggedIdx, 1);
+      newProjects.splice(targetIdx, 0, removed);
+      await reorderProjects(newProjects);
+    }
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const toggleHideProject = (id: number) => {
+    setHiddenProjects(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      localStorage.setItem('admin_hidden_projects', JSON.stringify(Array.from(next)));
+      return next;
+    });
+  };
+
   const visibleProjects = userRole === 'admin'
     ? (showAllAdmin ? projects : projects.filter(p => !hiddenProjects.has(p.id)))
     : projects;
+
+  const hiddenCount = hiddenProjects.size;
 
   const specialProject = visibleProjects.find(p => p.is_global_welcome === 1);
   const normalProjects = visibleProjects.filter(p => p.id !== specialProject?.id);
