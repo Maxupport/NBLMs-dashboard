@@ -437,29 +437,48 @@ export default function AdminPage() {
                         >
                           <span>👥</span> 權限
                         </button>
-                        <button 
-                          onClick={async () => {
-                            const newStatus = c.status === 'disabled' ? 'active' : 'disabled';
-                            if (c.owner_role === 'admin') {
-                              return toast.error('系統保護：無法變更管理員建立的頻道狀態');
-                            }
-                            const res = await fetch(`/api/admin/channels/${c.id}/status`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ status: newStatus })
-                            });
-                            if (res.ok) {
-                              toast.success(`頻道已${newStatus === 'disabled' ? '停用' : '啟用'}`);
-                              mutateChannels();
-                            } else {
-                              const data = await res.json();
-                              toast.error(data.error || '操作失敗');
-                            }
-                          }}
-                          className={`px-3 py-1 rounded text-xs font-medium border transition-colors ${c.status === 'disabled' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20' : 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20'}`}
-                        >
-                          {c.status === 'disabled' ? '啟用該頻道' : '停用該頻道'}
-                        </button>
+                          <button 
+                            onClick={async () => {
+                              if (!confirm(`⚠️ 確定要【永久刪除】頻道「${c.name}」嗎？\n此動作將一併刪除所有子頻道、連結與權限資料，且無法還原！`)) return;
+                              const res = await fetch(`/api/projects/${c.id}`, {
+                                method: 'DELETE'
+                              });
+                              if (res.ok) {
+                                toast.success('頻道已成功永久刪除');
+                                mutateChannels();
+                              } else {
+                                const data = await res.json();
+                                toast.error(data.error || '刪除失敗');
+                              }
+                            }}
+                            className="px-2 py-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded text-xs text-red-400 transition-colors"
+                          >
+                            刪除
+                          </button>
+                          
+                          <button 
+                            onClick={async () => {
+                              const newStatus = c.status === 'disabled' ? 'active' : 'disabled';
+                              if (c.owner_role === 'admin') {
+                                return toast.error('系統保護：無法變更管理員建立的頻道狀態');
+                              }
+                              const res = await fetch(`/api/admin/channels/${c.id}/status`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ status: newStatus })
+                              });
+                              if (res.ok) {
+                                toast.success(`頻道已${newStatus === 'disabled' ? '停用' : '啟用'}`);
+                                mutateChannels();
+                              } else {
+                                const data = await res.json();
+                                toast.error(data.error || '操作失敗');
+                              }
+                            }}
+                            className={`px-3 py-1 rounded text-xs font-medium border transition-colors ${c.status === 'disabled' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20' : 'bg-orange-500/10 border-orange-500/30 text-orange-400 hover:bg-orange-500/20'}`}
+                          >
+                            {c.status === 'disabled' ? '啟用' : '停用'}
+                          </button>
                       </div>
                     </td>
                   </tr>

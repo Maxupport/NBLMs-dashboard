@@ -91,6 +91,19 @@ async function initSchema(db: Client) {
       console.log('✅ 預設管理員帳號已建立：Maxupport / maxupport1238');
     }
 
+    // 檢查是否有 Ghost 虛擬帳號
+    const ghostRes = await db.execute("SELECT id FROM users WHERE username = 'Ghost' LIMIT 1");
+    if (ghostRes.rows.length === 0) {
+      const bcrypt = require('bcryptjs');
+      // Ghost 帳號使用隨機超長密碼，基本上無法登入
+      const ghostHash = await bcrypt.hash(Math.random().toString(36) + Date.now().toString(), 12);
+      await db.execute({
+        sql: "INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'member')",
+        args: ['Ghost', ghostHash]
+      });
+      console.log('✅ Ghost 虛擬帳號已建立，用於承接已刪除頻道');
+    }
+
     try {
       await db.execute('ALTER TABLE projects ADD COLUMN is_global_welcome INTEGER DEFAULT 0');
     } catch (e) {
