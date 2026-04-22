@@ -380,28 +380,74 @@ export default function DashboardPage() {
 
   if (!selectedProjectId || !activeProject) {
     return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 py-4">
-        {/* 歡迎區塊 */}
-        <div className="p-8 rounded-3xl glass-panel relative overflow-hidden bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full mix-blend-screen filter blur-[80px] -translate-y-1/2 translate-x-1/2" />
-          
-          <div className="relative z-10">
-            <h2 className="text-3xl font-semibold mb-3">歡迎來到 Workspace</h2>
-            <p className="text-white/60 max-w-lg text-sm leading-relaxed">
-              在這裡您可以集中管理所有散落的 NBLMs 頻道。透過左側選單進入現有頻道，或建立新頻道以開始整理連結。
-            </p>
+      <>
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 py-4">
+          {/* 歡迎區塊 */}
+          <div className="p-8 rounded-3xl glass-panel relative overflow-hidden bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full mix-blend-screen filter blur-[80px] -translate-y-1/2 translate-x-1/2" />
             
-            <div className="mt-8 flex gap-4">
-              <button 
-                onClick={() => setIsNewProjectModalOpen(true)}
-                className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors text-sm font-medium shadow-lg shadow-primary/20"
-              >
-                <span className="mr-2">+</span>馬上建立新頻道
-              </button>
+            <div className="relative z-10">
+              <h2 className="text-3xl font-semibold mb-3">歡迎來到 Workspace</h2>
+              <p className="text-white/60 max-w-lg text-sm leading-relaxed">
+                在這裡您可以集中管理所有散落的 NBLMs 頻道。透過左側選單進入現有頻道，或建立新頻道以開始整理連結。
+              </p>
+              
+              <div className="mt-8 flex gap-4">
+                <button 
+                  onClick={() => setIsNewProjectModalOpen(true)}
+                  className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors text-sm font-medium shadow-lg shadow-primary/20"
+                >
+                  <span className="mr-2">+</span>馬上建立新頻道
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Global New Project Modal (duplicate for early return) */}
+        {isNewProjectModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in">
+             <div className="bg-card w-full max-w-md rounded-2xl border border-white/10 p-6 shadow-2xl relative">
+                <button onClick={() => setIsNewProjectModalOpen(false)} className="absolute top-4 right-4 text-white/40 hover:text-white">✕</button>
+                <h3 className="text-xl font-medium mb-4">{newProject.parent_id ? '新增子頻道' : '建立新頻道'}</h3>
+                <form onSubmit={handleCreateProject} className="space-y-4">
+                  <div>
+                    <label className="text-xs text-white/50 block mb-1">{newProject.parent_id ? '子頻道名稱' : '頻道名稱'}</label>
+                    <input required autoFocus className="glass-input" value={newProject.name} onChange={e => setNewProject({...newProject, name: e.target.value})} placeholder={newProject.parent_id ? '例如: 2024 Q1 報告' : '例如: 2024 行銷企劃研究'} />
+                  </div>
+                  {!newProject.parent_id && (
+                    <div>
+                      <label className="text-xs text-white/50 block mb-1">所屬母頻道 (Parent Channel)</label>
+                      <select 
+                        className="glass-input w-full appearance-none bg-black/30"
+                        value={newProject.parent_id || ''} 
+                        onChange={e => setNewProject({...newProject, parent_id: e.target.value ? Number(e.target.value) : null})}
+                      >
+                        <option value="">無 (設定為頂層頻道)</option>
+                        {projects.filter(p => !p.parent_id && p.is_global_welcome !== 1).map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {newProject.parent_id && (
+                    <div className="px-3 py-2 bg-white/5 rounded-lg border border-white/10 text-xs text-white/50">
+                      所屬父頻道：<span className="text-white/80 font-medium">{projects.find(p => p.id === newProject.parent_id)?.name}</span>
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-xs text-white/50 block mb-1">頻道描述 (選填)</label>
+                    <textarea className="glass-input resize-none h-20" value={newProject.description} onChange={e => setNewProject({...newProject, description: e.target.value})} placeholder="簡述這個頻道的目標與範圍..." />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <button type="button" onClick={() => setIsNewProjectModalOpen(false)} className="px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 transition-colors">取消</button>
+                    <button type="submit" className="px-4 py-2 rounded-lg text-sm bg-primary text-white hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">確認建立</button>
+                  </div>
+                </form>
+             </div>
+          </div>
+        )}
+      </>
     );
   }
 
