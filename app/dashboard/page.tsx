@@ -545,11 +545,9 @@ export default function DashboardPage() {
               >
                 <span className="group-hover:rotate-12 transition-transform">🎁</span> 邀請連結
               </button>
-              {isAdmin && (
-                <button onClick={openMembersModal} className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-white/80 transition-colors flex items-center gap-2">
-                  <span>👥</span> 權限
-                </button>
-              )}
+              <button onClick={openMembersModal} className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-white/80 transition-colors flex items-center gap-2">
+                <span>👥</span> 權限
+              </button>
               <button onClick={() => setIsNewLinkModalOpen(true)} className="px-4 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/50 text-primary-foreground rounded-lg text-sm transition-colors shadow-lg shadow-primary/10 flex items-center gap-2">
                 <span>+</span> 新增
               </button>
