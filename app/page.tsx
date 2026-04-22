@@ -31,6 +31,23 @@ function AuthContent() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleCheckUsername = async () => {
+    if (isLogin || !formData.username) return;
+    try {
+      const res = await fetch(`/api/auth/check-username?username=${encodeURIComponent(formData.username)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.exists) {
+          setIsLogin(true);
+          setSuccess("💡 偵測到您已有帳號，已為您自動切換至登入！");
+          setError("");
+        }
+      }
+    } catch (err) {
+      // ignore errors for background check
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -153,6 +170,7 @@ function AuthContent() {
               placeholder="輸入您的帳號"
               value={formData.username}
               onChange={handleChange}
+              onBlur={handleCheckUsername}
             />
           </section>
 
