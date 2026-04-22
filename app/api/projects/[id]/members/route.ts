@@ -27,8 +27,12 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
     const db = await getDb();
     
-    // 如果不是管理員，只能看到「已經是該頻道成員」的使用者資料
-    const sqlCondition = user.role === 'admin' ? "u.role != 'admin'" : "u.role != 'admin' AND pm.user_id IS NOT NULL";
+    // 1. 管理員可以看到除了管理員以外的所有人 (用於管理後台)
+    // 2. 一般使用者在管理頻道成員時，絕對不能看到 Ghost 也不應該看到管理員
+    const isSystemAdmin = user.role === 'admin';
+    const sqlCondition = isSystemAdmin 
+      ? "u.role != 'admin'" 
+      : "u.role != 'admin' AND u.username != 'Ghost' AND (pm.user_id IS NOT NULL OR u.id = ?)"; // 或者是為了列出可加入人選，排除 Ghost
     
     const res = await db.execute({
       sql: `
@@ -36,7 +40,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
                CASE WHEN pm.user_id IS NOT NULL THEN 1 ELSE 0 END as is_member
         FROM users u
         LEFT JOIN project_members pm ON u.id = pm.user_id AND pm.project_id = ?
-        WHERE ${sqlCondition}
+        WHERE u.role != 'admin' AND u.username != 'Ghost'
         ORDER BY u.username
       `,
       args: [params.id]
