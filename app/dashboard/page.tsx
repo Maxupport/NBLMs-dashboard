@@ -58,12 +58,6 @@ export default function DashboardPage() {
   const isOwnerOrAdmin = !!(isAdmin || (activeProject && (activeProject as any).my_role === 'owner'));
   
   useEffect(() => {
-    if (activeProject) {
-      console.log(`👤 [Identity Report] Project: ${activeProject.name}, My Role: ${(activeProject as any).my_role}, isOwnerOrAdmin: ${isOwnerOrAdmin}`);
-    }
-  }, [activeProject, isOwnerOrAdmin]);
-
-  useEffect(() => {
     // 如果首頁進來沒有選中專案，自動尋找特殊的「全域歡迎區」
     // 為了避免與「新增專案」按鈕衝突，我們只在初次載入（或專案列表載入）時執行一次
     if (!hasAutoSelected.current && projects.length > 0) {
@@ -94,7 +88,6 @@ export default function DashboardPage() {
       try {
         const localLayoutStr = localStorage.getItem(`custom_layout_${selectedProjectId}`);
         if (localLayoutStr) {
-          console.log(`📦 [Local Layout Active] Project ID: ${selectedProjectId}. Applying LocalStorage layout.`);
           const { order, categories } = JSON.parse(localLayoutStr);
           
           // 1. Apply category overrides
@@ -118,10 +111,8 @@ export default function DashboardPage() {
           }
         }
       } catch(e) {
-        console.error('Local layout error:', e);
+        // Silently ignore layout errors in production
       }
-    } else if (role === 'owner' || role === 'admin') {
-       console.log(`🌐 [Global Sort Active] Role is ${role}. Using database order.`);
     }
     return arr;
   }, [linksData, selectedProjectId, activeProject]);
@@ -248,7 +239,6 @@ export default function DashboardPage() {
         const layout = existingLayoutStr ? JSON.parse(existingLayoutStr) : { order: [], categories: {} };
         layout.categories[editLinkData.id] = editLinkData.category;
         localStorage.setItem(`custom_layout_${selectedProjectId}`, JSON.stringify(layout));
-        console.log('💾 [Edit Link] Editor category change saved to localStorage.');
       } catch(e) {}
     }
 
@@ -297,26 +287,23 @@ export default function DashboardPage() {
     mutateLinks({ links: filteredLinks }, false);
 
     if (isOwnerOrAdmin) {
-      const confirmGlobal = window.confirm('系統判定您擁有管理權限，即將更新「全域」排序與分區。確定要影響所有人嗎？');
-      if (confirmGlobal) {
-        try {
-          if (draggedLink.category !== targetCategory) {
-             await fetch(`/api/links/${draggedLinkId}`, {
-               method: 'PATCH',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify({ title: draggedLink.title, url: draggedLink.url, category: targetCategory })
-             });
-          }
-          const res = await fetch('/api/links/reorder', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderedIds: finalOrderedIds, projectId: selectedProjectId })
-          });
-          if (!res.ok) throw new Error('API Reorder failed');
-          mutateLinks();
-        } catch(err) {
-           mutateLinks(); 
+      try {
+        if (draggedLink.category !== targetCategory) {
+           await fetch(`/api/links/${draggedLinkId}`, {
+             method: 'PATCH',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ title: draggedLink.title, url: draggedLink.url, category: targetCategory })
+           });
         }
+        const res = await fetch('/api/links/reorder', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderedIds: finalOrderedIds, projectId: selectedProjectId })
+        });
+        if (!res.ok) throw new Error('API Reorder failed');
+        mutateLinks();
+      } catch(err) {
+         mutateLinks(); 
       }
     } else {
       try {
