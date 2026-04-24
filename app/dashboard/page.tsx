@@ -425,7 +425,7 @@ export default function DashboardPage() {
                 }
                 fetch(`/api/projects/${selectedProjectId}/track`, { method: 'POST' }).catch(() => {});
               }}
-              className={`p-3 sm:p-4 rounded-xl ${bgClass} border ${borderClass} hover:opacity-80 transition-all group relative overflow-hidden flex flex-col h-full min-h-[130px] w-[calc(50%-6px)] sm:w-64 shrink-0 cursor-pointer interactive-card ${draggedLinkId === link.id ? 'opacity-50 blur-sm scale-95' : ''}`}
+              className={`p-3 sm:p-4 rounded-xl ${bgClass} border ${borderClass} hover:opacity-80 transition-all group relative overflow-hidden flex flex-col h-full min-h-[130px] w-[calc(50%-6px)] sm:w-[calc(25%-9px)] lg:w-64 shrink-0 cursor-pointer interactive-card ${draggedLinkId === link.id ? 'opacity-50 blur-sm scale-95' : ''}`}
             >
                <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex gap-1">
                  {hasWriteAccessProjects.length > 0 && (
