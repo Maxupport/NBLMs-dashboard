@@ -99,8 +99,8 @@ export async function POST(request: Request) {
     if (!canWrite) return NextResponse.json({ error: '只有頻道建立者、協作者或管理員可以新增連結' }, { status: 403 });
 
     const result = await db.execute({
-      sql: `INSERT INTO notebook_links (project_id, title, url, description, category) VALUES (?, ?, ?, ?, ?)`,
-      args: [projectId, title, url, description || '', category]
+      sql: `INSERT INTO notebook_links (project_id, title, url, description, category, creator_id) VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [projectId, title, url, description || '', category, user.sub]
     });
 
     return NextResponse.json({ success: true, linkId: result.lastInsertRowid?.toString() });

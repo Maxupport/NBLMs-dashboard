@@ -377,8 +377,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<{ username: string; role: string; id: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Resize logic
+  // Resize & Mobile logic
   const [sidebarWidth, setSidebarWidth] = useState(256);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isResizing = useRef(false);
 
   useEffect(() => {
@@ -446,6 +447,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/');
   };
 
+  const pathname = usePathname();
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await fetch('/api/auth/password', {
@@ -477,14 +483,56 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <ProjectProvider userRole={user.role} userId={(user.id || (user as any).sub)?.toString() || ''}>
-      <div className="flex h-screen bg-background overflow-hidden relative">
+      <div className="flex flex-col md:flex-row h-screen bg-background overflow-hidden relative">
         
+        {/* Mobile Header */}
+        <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-white/5 bg-card/80 backdrop-blur-md z-40 sticky top-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-primary/20 shrink-0 text-xs">
+              N
+            </div>
+            <h2 className="font-semibold text-sm tracking-tight text-white/90">NBLMs LinkStation</h2>
+          </div>
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 text-white/60 hover:text-white transition-colors"
+          >
+            {isMobileMenuOpen ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+            )}
+          </button>
+        </header>
+
+        {/* Sidebar Backdrop (Mobile) */}
+        {isMobileMenuOpen && (
+          <div 
+            className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
         <aside 
           style={{ width: `${sidebarWidth}px` }}
-          className="border-r border-border bg-card/50 flex flex-col pt-4 relative transition-[width] duration-75 ease-out"
+          className={`
+            fixed md:relative inset-y-0 left-0 z-50 md:z-auto
+            border-r border-border bg-card/95 md:bg-card/50 flex flex-col pt-4 
+            transition-all duration-300 ease-out
+            ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            max-w-[85vw]
+          `}
         >
-          {/* Logo Section */}
+          {/* Close button for mobile */}
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="md:hidden absolute top-4 right-4 p-2 text-white/30 hover:text-white"
+          >
+            ✕
+          </button>
+
+          {/* Logo Section (Desktop only or Drawer top) */}
           <div className={`${isCollapsed ? 'px-2 justify-center' : 'px-6'} pb-4 border-b border-white/5 flex items-center gap-3 transition-all`}>
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-primary/20 shrink-0">
               N
@@ -547,19 +595,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {/* Resizer Handle */}
+          {/* Resizer Handle (Desktop only) */}
           <div 
             onMouseDown={startResizing}
-            className="absolute top-0 -right-1 w-2 h-full cursor-col-resize hover:bg-primary/30 transition-colors z-50 group"
+            className="hidden md:block absolute top-0 -right-1 w-2 h-full cursor-col-resize hover:bg-primary/30 transition-colors z-50 group"
           >
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-8 bg-white/10 rounded-full group-hover:bg-primary/50 transition-colors" />
           </div>
         </aside>
 
         {/* content area */}
-        <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
           <div className="flex-1 overflow-y-auto">
-            {children}
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-6">
+              {children}
+            </div>
           </div>
         </main>
       </div>

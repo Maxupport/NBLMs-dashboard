@@ -446,7 +446,7 @@ export default function DashboardPage() {
                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                    </button>
                  )}
-                 {isOwnerOrAdmin && (
+                 {(isOwnerOrAdmin || (isEditorOrAbove && Number(link.creator_id) === Number(userId))) && (
                    <button 
                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteLink(link.id); }}
                      className="text-white/40 hover:text-red-400 transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md interactive-card"
@@ -554,49 +554,52 @@ export default function DashboardPage() {
   return (
     <div className="space-y-3 animate-in fade-in py-2">
       {/* 專案標題區 */}
-      <div className="flex items-center justify-between pb-4 border-b border-border gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-6 border-b border-white/5 gap-6">
         <div className="flex items-center gap-4 flex-1">
-          <div className="w-12 h-12 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center text-2xl shrink-0">
+          <div className="w-12 h-12 bg-primary/10 rounded-2xl border border-primary/20 flex items-center justify-center text-2xl shrink-0 shadow-inner">
             {activeProject.icon}
           </div>
-          <div>
-            <div className="flex items-center gap-2 group">
-              <h2 className="text-2xl font-semibold text-white/90">{activeProject.name}</h2>
-              {isOwnerOrAdmin && (
-                <button 
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 group flex-wrap">
+              <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight truncate">{activeProject.name}</h2>
+              <div className="flex items-center gap-1.5">
+                {isOwnerOrAdmin && (
+                  <button 
+                    onClick={() => {
+                      setEditProjectData({ name: activeProject.name, description: activeProject.description || '', parent_id: activeProject.parent_id || null, color: (activeProject as any).color || '#6366f1' });
+                      setIsEditProjectModalOpen(true);
+                    }} 
+                    className="text-white/20 hover:text-white/80 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
+                    title="編輯頻道設定"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                  </button>
+                )}
+                {activeProject.parent_id && (
+                  <div className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] text-white/40 font-bold uppercase tracking-wider">
+                    Sub
+                  </div>
+                )}
+                <button
                   onClick={() => {
-                    setEditProjectData({ name: activeProject.name, description: activeProject.description || '', parent_id: activeProject.parent_id || null, color: (activeProject as any).color || '#6366f1' });
-                    setIsEditProjectModalOpen(true);
-                  }} 
-                  className="text-white/20 hover:text-white/80 p-1 opacity-0 group-hover:opacity-100 transition-all rounded bg-white/5 hover:bg-white/10"
-                  title="編輯頻道設定"
+                    const url = `${window.location.origin}/dashboard?channel=${activeProject.id}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success('已複製此頻道專屬連結！');
+                  }}
+                  className="text-white/20 hover:text-white/80 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
+                  title="複製專屬網址"
                 >
-                  ✎
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                 </button>
-              )}
-              {activeProject.parent_id && (
-                <div className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] text-white/40 font-medium">
-                  子頻道
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  const url = `${window.location.origin}/dashboard?channel=${activeProject.id}`;
-                  navigator.clipboard.writeText(url);
-                  toast.success('已複製此頻道專屬連結！');
-                }}
-                className="text-white/20 hover:text-white/80 p-1 opacity-0 group-hover:opacity-100 transition-all rounded bg-white/5 hover:bg-white/10"
-                title="複製專屬網址，可供其他 Channel 收錄"
-              >
-                🔗
-              </button>
+              </div>
             </div>
-            <p className="text-white/40 text-sm mt-1">{activeProject.description || '無描述'}</p>
+            <p className="text-white/40 text-xs md:text-sm mt-1 font-medium truncate max-w-md">{activeProject.description || '無描述'}</p>
           </div>
         </div>
-        <div className="flex gap-3 shrink-0 items-center">
-          {/* Search & Sort */}
-          <div className="flex gap-2">
+
+        <div className="flex flex-col sm:flex-row gap-3 lg:items-center">
+          {/* Search & Sort Group */}
+          <div className="flex flex-1 gap-2">
             {!activeProject.parent_id ? (
               isEditorOrAbove && (
                 <button 
@@ -604,59 +607,69 @@ export default function DashboardPage() {
                     setNewProject({ name: '', description: '', parent_id: activeProject.id });
                     setIsNewProjectModalOpen(true);
                   }}
-                  className="h-10 px-4 bg-primary/10 border border-primary/20 rounded-lg text-xs text-primary hover:bg-primary/20 transition-all flex items-center gap-2 font-medium"
+                  className="h-10 px-4 bg-primary/10 border border-primary/20 rounded-xl text-xs text-primary hover:bg-primary/20 transition-all flex items-center gap-2 font-bold whitespace-nowrap"
                 >
-                  <span>➕</span> 新增子頻道
+                  <span>➕</span> 子頻道
                 </button>
               )
             ) : (
-              <div className="relative group/sort">
-                <button className="h-10 px-3 bg-white/5 border border-white/10 rounded-lg text-xs text-white/60 hover:text-white hover:border-white/20 transition-all flex items-center gap-2">
-                  {sortMethod === 'manual' ? '⇅ 自定義' : sortMethod === 'name' ? '🔤 名稱' : '👤 建立者'}
+              <div className="relative group/sort flex-shrink-0">
+                <button className="h-10 px-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white/60 hover:text-white hover:border-white/20 transition-all flex items-center gap-2 font-bold">
+                  {sortMethod === 'manual' ? '⇅' : sortMethod === 'name' ? '🔤' : '👤'}
                   <svg className="w-3 h-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                 </button>
-                <div className="absolute right-0 top-full mt-1 w-32 bg-card border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/sort:opacity-100 group-hover/sort:visible transition-all z-20 overflow-hidden backdrop-blur-md">
-                  <button onClick={() => setSortMethod('manual')} className={`w-full text-left px-4 py-2.5 text-xs hover:bg-white/5 transition-colors ${sortMethod === 'manual' ? 'bg-primary/10 text-primary font-medium' : 'text-white/60'}`}>⇅ 手動排序</button>
-                  <button onClick={() => setSortMethod('name')} className={`w-full text-left px-4 py-2.5 text-xs hover:bg-white/5 transition-colors ${sortMethod === 'name' ? 'bg-primary/10 text-primary font-medium' : 'text-white/60'}`}>🔤 依名稱排序</button>
-                  <button onClick={() => setSortMethod('creator')} className={`w-full text-left px-4 py-2.5 text-xs hover:bg-white/5 transition-colors ${sortMethod === 'creator' ? 'bg-primary/10 text-primary font-medium' : 'text-white/60'}`}>👤 依建立者排序</button>
+                <div className="absolute left-0 lg:right-0 lg:left-auto top-full mt-2 w-40 bg-card/95 border border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover/sort:opacity-100 group-hover/sort:visible transition-all z-20 overflow-hidden backdrop-blur-xl">
+                  <button onClick={() => setSortMethod('manual')} className={`w-full text-left px-4 py-3 text-xs hover:bg-white/5 transition-colors ${sortMethod === 'manual' ? 'bg-primary/20 text-primary font-bold' : 'text-white/60'}`}>⇅ 手動排序</button>
+                  <button onClick={() => setSortMethod('name')} className={`w-full text-left px-4 py-3 text-xs hover:bg-white/5 transition-colors ${sortMethod === 'name' ? 'bg-primary/20 text-primary font-bold' : 'text-white/60'}`}>🔤 依名稱排序</button>
+                  <button onClick={() => setSortMethod('creator')} className={`w-full text-left px-4 py-3 text-xs hover:bg-white/5 transition-colors ${sortMethod === 'creator' ? 'bg-primary/20 text-primary font-bold' : 'text-white/60'}`}>👤 依建立者排序</button>
                 </div>
               </div>
             )}
 
-            <div className="relative">
-              <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <div className="relative flex-1">
+              <svg className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               <input 
                 type="text" 
-                placeholder="搜尋筆記本..." 
+                placeholder="搜尋..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-white/20 transition-colors w-40 h-10 focus:w-56"
+                className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all h-10"
               />
             </div>
           </div>
-          {isOwnerOrAdmin && (
-            <>
+
+          {/* Action Buttons Group */}
+          <div className="flex gap-2 shrink-0">
+            {isOwnerOrAdmin && (
+              <>
+                <button 
+                  onClick={() => {
+                    const url = `${window.location.origin}/?invite=${activeProject.id}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success('已複製外部邀請專屬網址！', { duration: 4000 });
+                  }}
+                  className="flex-1 sm:flex-none h-10 px-4 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-xs text-amber-200 transition-all flex items-center justify-center gap-2 font-bold shadow-lg shadow-amber-500/5 group"
+                  title="複製邀請連結"
+                >
+                  <span className="group-hover:rotate-12 transition-transform">🎁</span> <span className="hidden sm:inline">邀請</span>
+                </button>
+                <button 
+                  onClick={openMembersModal} 
+                  className="flex-1 sm:flex-none h-10 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs text-white/80 transition-all flex items-center justify-center gap-2 font-bold"
+                >
+                  <span>👥</span> <span className="hidden sm:inline">權限</span>
+                </button>
+              </>
+            )}
+            {isEditorOrAbove && (
               <button 
-                onClick={() => {
-                  const url = `${window.location.origin}/?invite=${activeProject.id}`;
-                  navigator.clipboard.writeText(url);
-                  toast.success('已複製外部邀請專屬網址！受邀者透過此網址註冊將自動取得本區權限。', { duration: 4000 });
-                }}
-                className="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-sm text-amber-200 transition-colors flex items-center gap-2 shadow-lg shadow-amber-500/5 group"
-                title="外部使用者透過此連結註冊，系統將自動允許其進入此頻道"
+                onClick={() => setIsNewLinkModalOpen(true)} 
+                className="flex-[2] sm:flex-none h-10 px-5 bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary rounded-xl text-xs font-bold transition-all shadow-lg shadow-primary/10 flex items-center justify-center gap-2"
               >
-                <span className="group-hover:rotate-12 transition-transform">🎁</span> 邀請連結
+                <span>+</span> 新增卡片
               </button>
-              <button onClick={openMembersModal} className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-white/80 transition-colors flex items-center gap-2">
-                <span>👥</span> 權限
-              </button>
-            </>
-          )}
-          {isEditorOrAbove && (
-            <button onClick={() => setIsNewLinkModalOpen(true)} className="px-4 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/50 text-primary-foreground rounded-lg text-sm transition-colors shadow-lg shadow-primary/10 flex items-center gap-2">
-              <span>+</span> 新增
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

@@ -23,9 +23,10 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
           AND (
             p.owner_id = ? 
             OR p.parent_id IN (SELECT id FROM projects WHERE owner_id = ?)
+            OR nl.creator_id = ?
           )
         `,
-        args: [params.id, user.sub, user.sub]
+        args: [params.id, user.sub, user.sub, user.sub]
       });
       if (res.rows.length > 0) canDelete = true;
     }

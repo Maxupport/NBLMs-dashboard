@@ -162,6 +162,16 @@ async function initSchema(db: Client) {
       await db.execute("ALTER TABLE registration_applications ADD COLUMN raw_password TEXT");
     } catch (e) {}
 
+    try {
+      await db.execute("ALTER TABLE notebook_links ADD COLUMN creator_id INTEGER REFERENCES users(id) ON DELETE SET NULL");
+      // Migration: Set existing links creator_id to project owner
+      await db.execute(`
+        UPDATE notebook_links 
+        SET creator_id = (SELECT owner_id FROM projects WHERE projects.id = notebook_links.project_id)
+        WHERE creator_id IS NULL
+      `);
+    } catch (e) {}
+
     await db.executeMultiple(`
       CREATE TABLE IF NOT EXISTS feedbacks (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
