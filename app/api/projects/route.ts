@@ -29,22 +29,25 @@ export async function GET(request: Request) {
         sql: `
           SELECT DISTINCT p.*, 
                  CASE WHEN u.role = 'admin' THEN u.username || ' (管理員)' ELSE u.username END as owner_username,
-                 CASE 
-                   WHEN p.owner_id = ? THEN 'owner'
-                   WHEN pm.role IS NOT NULL THEN pm.role
-                   ELSE 'viewer'
-                 END as my_role
+                 COALESCE(
+                   CASE WHEN p.owner_id = ? THEN 'owner' END,
+                   pm.role,
+                   CASE WHEN p.parent_id IN (SELECT id FROM projects WHERE owner_id = ?) THEN 'owner' END,
+                   ppm.role,
+                   'viewer'
+                 ) as my_role
           FROM projects p
           LEFT JOIN users u ON p.owner_id = u.id
           LEFT JOIN project_members pm ON p.id = pm.project_id AND pm.user_id = ?
+          LEFT JOIN project_members ppm ON p.parent_id = ppm.project_id AND ppm.user_id = ?
           WHERE p.owner_id = ? 
              OR pm.user_id = ? 
              OR p.is_global_welcome = 1
              OR p.parent_id IN (SELECT id FROM projects WHERE owner_id = ?)
-             OR p.parent_id IN (SELECT project_id FROM project_members WHERE user_id = ? AND role = 'editor')
+             OR p.parent_id IN (SELECT project_id FROM project_members WHERE user_id = ?)
           ORDER BY p.sort_order ASC, p.created_at DESC
         `,
-        args: [user.sub, user.sub, user.sub, user.sub, user.sub, user.sub]
+        args: [user.sub, user.sub, user.sub, user.sub, user.sub, user.sub, user.sub, user.sub]
       });
       projects = res.rows;
     }
@@ -82,7 +85,20 @@ export async function POST(request: Request) {
 
     const db = await getDb();
     
-    // Check channel limit for members (only for parent channels)
+    // Security check: If parent_id is provided, user must be owner/editor of that parent
+    if (parent_id) {
+      const parentAccessRes = await db.execute({
+        sql: `
+          SELECT 1 FROM projects WHERE id = ? AND owner_id = ?
+          UNION
+          SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ? AND role = 'editor'
+        `,
+        args: [parent_id, user.sub, parent_id, user.sub]
+      });
+      if (user.role !== 'admin' && parentAccessRes.rows.length === 0) {
+        return NextResponse.json({ error: '您沒有權限在該頻道下建立子頻道' }, { status: 403 });
+      }
+    }
     if (user.role !== 'admin' && !parent_id) {
       const limitRes = await db.execute({
         sql: 'SELECT COUNT(*) as count FROM projects WHERE owner_id = ? AND parent_id IS NULL',

@@ -56,6 +56,7 @@ export default function DashboardPage() {
   const activeProject = projects.find(p => p.id === selectedProjectId);
   const parentProject = activeProject?.parent_id ? projects.find(p => p.id === activeProject.parent_id) : null;
   const isOwnerOrAdmin = !!(isAdmin || (activeProject && (activeProject as any).my_role === 'owner'));
+  const isEditorOrAbove = !!(isAdmin || (activeProject && ((activeProject as any).my_role === 'owner' || (activeProject as any).my_role === 'editor')));
   
   useEffect(() => {
     // 如果首頁進來沒有選中專案，自動尋找特殊的「全域歡迎區」
@@ -436,7 +437,7 @@ export default function DashboardPage() {
                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                    </button>
                  )}
-                 {(isOwnerOrAdmin || activeProject?.my_role === 'editor') && (
+                 {isEditorOrAbove && (
                    <button
                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditLinkData({ id: link.id, title: link.title, url: link.url, description: link.description || '', category: link.category || 'other' }); setIsEditLinkModalOpen(true); }}
                      className="text-white/40 hover:text-white transition-colors bg-black/40 p-1.5 rounded-md backdrop-blur-md interactive-card"
@@ -597,15 +598,17 @@ export default function DashboardPage() {
           {/* Search & Sort */}
           <div className="flex gap-2">
             {!activeProject.parent_id ? (
-              <button 
-                onClick={() => {
-                  setNewProject({ name: '', description: '', parent_id: activeProject.id });
-                  setIsNewProjectModalOpen(true);
-                }}
-                className="h-10 px-4 bg-primary/10 border border-primary/20 rounded-lg text-xs text-primary hover:bg-primary/20 transition-all flex items-center gap-2 font-medium"
-              >
-                <span>➕</span> 新增子頻道
-              </button>
+              isEditorOrAbove && (
+                <button 
+                  onClick={() => {
+                    setNewProject({ name: '', description: '', parent_id: activeProject.id });
+                    setIsNewProjectModalOpen(true);
+                  }}
+                  className="h-10 px-4 bg-primary/10 border border-primary/20 rounded-lg text-xs text-primary hover:bg-primary/20 transition-all flex items-center gap-2 font-medium"
+                >
+                  <span>➕</span> 新增子頻道
+                </button>
+              )
             ) : (
               <div className="relative group/sort">
                 <button className="h-10 px-3 bg-white/5 border border-white/10 rounded-lg text-xs text-white/60 hover:text-white hover:border-white/20 transition-all flex items-center gap-2">
@@ -647,10 +650,12 @@ export default function DashboardPage() {
               <button onClick={openMembersModal} className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-white/80 transition-colors flex items-center gap-2">
                 <span>👥</span> 權限
               </button>
-              <button onClick={() => setIsNewLinkModalOpen(true)} className="px-4 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/50 text-primary-foreground rounded-lg text-sm transition-colors shadow-lg shadow-primary/10 flex items-center gap-2">
-                <span>+</span> 新增
-              </button>
             </>
+          )}
+          {isEditorOrAbove && (
+            <button onClick={() => setIsNewLinkModalOpen(true)} className="px-4 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/50 text-primary-foreground rounded-lg text-sm transition-colors shadow-lg shadow-primary/10 flex items-center gap-2">
+              <span>+</span> 新增
+            </button>
           )}
         </div>
       </div>
